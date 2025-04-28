@@ -17,79 +17,102 @@ from groups_util import GroupUtils
 from task_scheduler import TaskScheduled
 from send_sandeco import SendSandeco
 
-# Inject enhanced custom CSS for a modern, elegant design with Google Fonts and Font Awesome
+# Inject custom dark neon CSS
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-    body {
-        background: linear-gradient(135deg, #fff3e0, #fce4ec);
-        font-family: 'Roboto', sans-serif;
-        color: #333;
-        transition: background 0.3s ease;
+    body, .stApp {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+      margin: 0;
+      padding: 0;
     }
 
-    h1, h2, h3, h4, h5, h6 {
-        color: #ad1457;
-        font-weight: 700;
+    .main-landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      margin: 0;
     }
 
-    .stButton>button {
-        background: linear-gradient(45deg, #d81b60, #ec407a);
-        border: none;
-        border-radius: 6px;
-        color: #fff;
-        padding: 10px 20px;
-        transition: transform 0.2s, box-shadow 0.2s;
+    h1.title {
+      color: #2c3e50;
+      font-size: 2.5em;
+      margin: 0 0 16px;
+      text-align: center;
+      font-weight: 700;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+    h1.title:hover {
+      transform: scale(1.05);
+      color: #3498db;
     }
 
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    p.subtitle {
+      color: #34495e;
+      font-size: 1.2em;
+      margin: 0 0 24px;
+      text-align: center;
     }
 
-    .dataframe {
-        border: none;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
+    .content {
+      background: #ffffff;
+      border: 1px solid #dcdde1;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 0 auto 24px;
+      max-width: 700px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: left;
+      line-height: 1.6;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .content:hover {
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-5px);
     }
 
-    .dataframe:hover {
-        transform: scale(1.02);
+    .stTabs [data-baseweb="tab-list"] {
+      justify-content: center;
+      margin-bottom: 16px;
     }
-
-    .dataframe th {
-        background: #ad1457 !important;
-        color: #fff !important;
-        font-weight: 600;
+    .stTabs [data-baseweb="tab"] {
+      background: #ecf0f1;
+      color: #2c3e50;
+      font-weight: 600;
+      padding: 0.5em 1.5em;
+      border-radius: 4px;
+      transition: background 0.2s;
     }
-
-    .dataframe td {
-        background: #fff !important;
-    }
-
-    .stTextInput input,
-    .stSelectbox select {
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px;
-    }
-
-    .streamlit-expanderHeader {
-        background: #f5f5f5;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+    .stTabs [aria-selected="true"] {
+      background: #3498db;
+      color: #fff;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+# wrapper principal
+st.markdown('<div class="main-landing">', unsafe_allow_html=True)
+
+# título
+st.markdown('<h1 class="title">Gerenciamento de Grupos & Agendamento</h1>', unsafe_allow_html=True)
+
 # Initialize core components
 control = GroupController()
+# Botão para atualizar grupos manualmente
+if st.button('Atualizar Grupos'):
+    with st.spinner('Atualizando grupos...'):
+        control.fetch_groups(force_refresh=True)
+    st.success('Grupos atualizados com sucesso!')
+    st.rerun()
+# Carrega lista de grupos (cache padrão)
 groups = control.fetch_groups()
 ut = GroupUtils()
 group_map, options = ut.map(groups)
@@ -171,7 +194,7 @@ with col1:
                 if st.button("Remover Agendamento"):
                     if delete_scheduled_group(selected_info['id']):
                         st.success("Agendamento removido com sucesso!")
-                        st.experimental_rerun()
+                        st.rerun()
         else:
             st.info("Não há grupos com resumos agendados.")
     else:
@@ -259,10 +282,13 @@ with col2:
                             else:
                                 st.error("Número pessoal não configurado no .env")
                         t.sleep(2)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Erro ao salvar as configurações. Tente novamente!")
                 except Exception as e:
                     st.error(f"Erro ao configurar agendamento: {str(e)}")
     else:
         st.warning("Nenhum grupo encontrado!")
+
+# fecha wrapper
+st.markdown('</div>', unsafe_allow_html=True)

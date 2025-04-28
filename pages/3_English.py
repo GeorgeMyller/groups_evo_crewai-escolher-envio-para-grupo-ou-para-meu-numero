@@ -10,74 +10,88 @@ st.set_page_config(page_title='Group Management and Scheduling (English)', layou
 
 # Inject enhanced custom CSS for a modern, elegant design with Google Fonts
 st.markdown(
-   """
+    """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-    body {
-        background: linear-gradient(135deg, #e0f7fa, #ffffff);
-        font-family: 'Roboto', sans-serif;
-        color: #333;
-        transition: background 0.3s ease;
+    body, .stApp {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+      margin: 0;
+      padding: 0;
     }
 
-    h1, h2, h3, h4, h5, h6 {
-        color: #1a237e;
-        font-weight: 700;
+    .main-landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      margin: 0;
     }
 
-    .stButton>button {
-        background: linear-gradient(45deg, #FF6F00, #FF8F00);
-        border: none;
-        border-radius: 6px;
-        color: #fff;
-        padding: 10px 20px;
-        transition: transform 0.2s, box-shadow 0.2s;
+    h1.title {
+      color: #2c3e50;
+      font-size: 2.5em;
+      margin: 0 0 16px;
+      text-align: center;
+      font-weight: 700;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+    h1.title:hover {
+      transform: scale(1.05);
+      color: #3498db;
     }
 
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    p.subtitle {
+      color: #34495e;
+      font-size: 1.2em;
+      margin: 0 0 24px;
+      text-align: center;
     }
 
-    .dataframe {
-        border: none;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
+    .content {
+      background: #ffffff;
+      border: 1px solid #dcdde1;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 0 auto 24px;
+      max-width: 700px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: left;
+      line-height: 1.6;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .content:hover {
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-5px);
     }
 
-    .dataframe:hover {
-        transform: scale(1.02);
+    .stTabs [data-baseweb="tab-list"] {
+      justify-content: center;
+      margin-bottom: 16px;
     }
-
-    .dataframe th {
-        background: #1a237e !important;
-        color: #fff !important;
-        font-weight: 600;
+    .stTabs [data-baseweb="tab"] {
+      background: #ecf0f1;
+      color: #2c3e50;
+      font-weight: 600;
+      padding: 0.5em 1.5em;
+      border-radius: 4px;
+      transition: background 0.2s;
     }
-
-    .dataframe td {
-        background: #fff !important;
-    }
-
-    .stTextInput input,
-    .stSelectbox select {
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px;
-    }
-
-    .streamlit-expanderHeader {
-        background: #f5f5f5;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+    .stTabs [aria-selected="true"] {
+      background: #3498db;
+      color: #fff;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+# Wrapper principal
+st.markdown('<div class="main-landing">', unsafe_allow_html=True)
+# Título principal
+st.markdown('<h1 class="title">Group Management & Scheduling</h1>', unsafe_allow_html=True)
 
 # Environment setup
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -91,6 +105,12 @@ from send_sandeco import SendSandeco
 
 # Initialize core components
 control = GroupController()
+if st.button('Refresh Groups'):
+    with st.spinner('Refreshing groups...'):
+        control.fetch_groups(force_refresh=True)
+    st.success('Groups refreshed successfully!')
+    st.rerun()
+# Load groups (uses cache padrão)
 groups = control.fetch_groups()
 ut = GroupUtils()
 group_map, options = ut.map(groups)
@@ -172,7 +192,7 @@ with col1:
                 if st.button("Remove Schedule"):
                     if delete_scheduled_group(selected_info['id']):
                         st.success("Schedule removed successfully!")
-                        st.experimental_rerun()
+                        st.rerun()
         else:
             st.info("No groups with scheduled summaries.")
     else:
@@ -260,10 +280,13 @@ with col2:
                             else:
                                 st.error("Personal number not set in .env")
                         t.sleep(2)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Error saving settings. Please try again!")
                 except Exception as e:
                     st.error(f"Error configuring schedule: {str(e)}")
     else:
         st.warning("No groups found!")
+
+# No final do arquivo, antes ou após todo o conteúdo Streamlit
+st.markdown('</div>', unsafe_allow_html=True)

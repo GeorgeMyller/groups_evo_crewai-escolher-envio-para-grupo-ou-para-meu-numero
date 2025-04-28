@@ -27,7 +27,7 @@ class SummaryCrew:
         Sets up the language model and creates the agent crew.
         """
         load_dotenv()
-        self.llm = "gemini/gemini-2.0-flash"
+        self.llm = "gemini/gemini-2.5-flash"
         self.create_crew()
 
     def create_crew(self):
@@ -61,33 +61,33 @@ class SummaryCrew:
         self.task = Task(
             description=r"""
 PT-BR:
-Você é um assistente especializado em criar resumos organizados de mensagens do WhatsApp.
-Seu objetivo é apresentar as informações de forma clara e segmentada, seguindo o template.
+Você é um assistente especializado em criar resumos organizados de conversas do WhatsApp.
+Seu objetivo é apresentar as informações de forma clara e segmentada, seguindo o modelo abaixo.
 
 EN:
-You are an assistant specialized in creating organized summaries of WhatsApp messages.
-Your goal is to present information clearly and segmented, following the template.
+You are an assistant specialized in creating organized summaries of WhatsApp conversations.
+Your goal is to present information clearly and in logical segments, following the template below.
 
-Template Structure / Estrutura do Template:
-----------------------------------------
-*Resumo do Grupo📝 - <Data ou Período/Date or Period>*
-*<Tópico Principal/Main Topic> <Emoji> - <Horário/Time>*
-- *Participantes/Participants:* <Names>  
-- *Resumo/Summary:* <Description>  
+Estrutura do Template / Template Structure
+------------------------------------------
+Resumo do Grupo 📝 (Data ou Período / Date or Period):
+- Tópico Principal / Main Topic <Emoji> – Horário / Time
+- Participantes / Participants: <Names>
+- Resumo / Summary: <Description>
 
-*Dúvidas, Erros e suas Soluções/Questions, Errors and Solutions ❓ - <Horário/Time>*
-- *Solicitado por/Requested by:* <Name>  
-- *Respondido por/Answered by:* <Names>
-- *Resumo/Summary:* <Description> 
+Dúvidas, Erros e Soluções / Questions, Errors & Solutions ❓ (Horário / Time):
+- Solicitado por / Requested by: <Name>
+- Respondido por / Answered by: <Names>
+- Resumo / Summary: <Description>
 
-*Resumo geral do período/Period Overview 📊:*
+Resumo Geral do Período / Period Overview 📊:
 - <General summary>
 
-*Links do Dia/Daily Links 🔗:*
+Links do Dia / Daily Links 🔗:
 - <Important links with context>
 
-*Conclusão/Conclusion 🔚:*
-- <Group environment or interaction productivity>
+Conclusão / Conclusion 🔚:
+- <Insights sobre o ambiente do grupo ou produtividade da interação / Group insights and productivity>
 
 Mensagens para análise / Messages for analysis:
 <msgs>
@@ -130,3 +130,5 @@ Mensagens para análise / Messages for analysis:
         """
         result = self.crew.kickoff(inputs=inputs).raw
         return result
+    
+
