@@ -1,0 +1,122 @@
+# ===================================
+# Python Byte-compiled / Optimized
+# ===================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ====================
+# C extensions
+# ====================
+*.so
+
+# ===================================
+# Distribution / Packaging
+# ===================================
+.Python
+build/
+dist/
+downloads/
+*.egg
+*.egg-info/
+.eggs/
+.installed.cfg
+pip-wheel-metadata/
+
+# ====================
+# Virtual Environments
+# ====================
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+.envrc
+
+# ====================
+# PyInstaller
+# ====================
+*.manifest
+*.spec
+
+# ===================================
+# Test & Coverage Reports
+# ===================================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+.hypothesis/
+nosetests.xml
+coverage.xml
+*,cover
+
+# ====================
+# Jupyter Notebook
+# ====================
+.ipynb_checkpoints/
+
+# ====================
+# Logs & Runtime
+# ====================
+*.log
+logs/
+
+# ====================
+# Databases
+# ====================
+*.sqlite3
+*.db
+
+# ====================
+# Cache & Temp Files
+# ====================
+*.cache
+.cache/
+
+# ===================================
+# Generated Data Files
+# ===================================
+groups_cache.json
+group_info.csv
+group_summary.csv
+log_summary.txt
+
+# ===================================
+# Documentation
+# ===================================
+/docs/Sandeco/
+
+# ====================
+# IDEs & Editors
+# ====================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# ====================
+# macOS
+# ====================
+.DS_Store
+
+# ====================
+# Node.js (if used)
+# ====================
+node_modules/
+
+# ====================
+# Optional Lockfiles
+# ====================
+# poetry.lock
+# Pipfile.lock
+
+# ====================
+# Uvicorn (if local)
+# ====================
+# uv.lock
