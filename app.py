@@ -1,133 +1,121 @@
 import streamlit as st
-from group_controller import GroupController
 
 st.set_page_config(page_title='Group Management & Scheduling App', layout='wide')
 
-# Initialize group controller
-controller = GroupController()
-
-# Inject custom CSS for a modern, elegant design with Google Fonts and Font Awesome
+# Inject custom CSS for a modern, elegant design (similar to the one in pages/1_Landing_page.py)
 st.markdown(
-  """
-  <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-  body, .stApp {
-    background: linear-gradient(135deg, #0a0f1a 0%, #1a2233 100%) !important;
-    min-height: 10vh;
-    font-family: 'Orbitron', sans-serif;
-  }
+    body, .stApp {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* Reduz o espaço do topo */
-  .main-landing {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 8vh;
-    padding: 2px 0 4px 0;
-  }
+    .main-landing {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      margin: 0;
+    }
 
-  h1.title {
-    color: #39FF14;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 14px;
-    font-size: 2.5em;
-    letter-spacing: 2px;
-    /* Removido o animation: glow */
-    text-shadow: none;
-  }
-  /* Removido o @keyframes glow */
-  p.subtitle {
-    color: #FF5F1F;
-    font-size: 1.2em;
-    text-align: center;
-    margin-bottom: 24px;
-  }
-  .content {
-    background: rgba(10, 15, 26, 0.92);
-    border-radius: 18px;
-    box-shadow: 0 0 32px #00FFAA44;
-    padding: 38px 28px 28px 28px;
-    margin: 0 auto 24px auto;
-    max-width: 600px;
-    color: #E0E0E0;
-    text-align: center;
-    transition: box-shadow 0.3s, transform 0.3s;
-  }
-  .content:hover {
-    box-shadow: 0 0 48px #00BBFF88;
-    transform: translateY(-2px) scale(1.01);
-  }
-  /* Destaque para as abas (tabs) */
-  .stTabs [data-baseweb="tab-list"] {
-    justify-content: center;
-    margin-bottom: 18px;
-    gap: 18px;
-  }
-  .stTabs [data-baseweb="tab"] {
-    background: rgba(20, 30, 50, 0.7);
-    border-radius: 12px 12px 0 0;
-    color: #00E5FF;
-    font-size: 1.1em;
-    font-weight: 700;
-    padding: 0.7em 2.2em;
-    margin: 0 2px;
-    border: 2px solid transparent;
-    box-shadow: 0 0 8px #00FFAA33;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-    position: relative;
-    z-index: 1;
-  }
-  .stTabs [aria-selected="true"] {
-    background: linear-gradient(90deg, #112233 0%, #223344 100%);
-    color: #fff;
-    border: 2px solid #00FFAA44;
-    box-shadow: none;
-    animation: none;
-    z-index: 2;
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 18px #00FFAA99, 0 0 8px #FF5F1F55; }
-    50% { box-shadow: 0 0 32px #00BBFF, 0 0 16px #FF5F1F; }
-    100% { box-shadow: 0 0 18px #00FFAA99, 0 0 8px #FF5F1F55; }
-  }
-  </style>
-  """,
-  unsafe_allow_html=True
+    h1.title {
+      color: #2c3e50;
+      font-size: 2.5em;
+      margin: 0 0 16px;
+      text-align: center;
+      font-weight: 700;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+    h1.title:hover {
+      transform: scale(1.05);
+      color: #3498db;
+    }
+    p.subtitle {
+      color: #34495e;
+      font-size: 1.2em;
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .content {
+      background: #ffffff;
+      border: 1px solid #dcdde1;
+      border-radius: 8px;
+      padding: 24px;
+      margin: 0 auto 24px;
+      max-width: 700px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: left;
+      line-height: 1.6;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .content:hover {
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-5px);
+    }
+
+    /* Style sidebar for page navigation */
+    .css-1d391kg { /* Sidebar */
+        background-color: #eef2f7; /* Light background for sidebar */
+    }
+    .css-1d391kg .css-1v3fvcr { /* Sidebar links */
+        color: #34495e;
+    }
+    .css-1d391kg .css-1v3fvcr:hover {
+        color: #3498db;
+        background-color: #dfe6ed;
+    }
+    .css-1d391kg .css-1v3fvcr.st-emotion-cache-1aehpvj { /* Active page link */
+        background-color: #3498db;
+        color: white;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-# Centraliza e amplia o conteúdo principal
+# wrapper para centralizar todo conteúdo
 st.markdown('<div class="main-landing">', unsafe_allow_html=True)
 st.markdown('<h1 class="title">Bem-vindo ao WhatsApp Group Resumer App</h1>', unsafe_allow_html=True)
 
-# Tabs para idiomas
-st.markdown('<div style="width:100%;max-width:650px;margin:0 auto;">', unsafe_allow_html=True)
+# Tabs para idiomas - Mantendo a descrição inicial em abas
 tabs = st.tabs(["Versão em Português", "English Version"])
 
 with tabs[0]:
-  st.markdown('<p class="subtitle">Uma experiência centrada no usuário para gerenciar grupos e agendar resumos de forma prática.</p>', unsafe_allow_html=True)
-  st.markdown('''
-  <div class="content tab-content">
-    <h3>O que o Programa Faz?</h3>
-    <p>Este programa permite que você visualize detalhes dos grupos, agende a geração de resumos automáticos e os envie para grupos ou contatos pessoais. Nossa interface intuitiva foi desenvolvida para oferecer uma experiência agradável e eficiente.</p>
-    <h3>Como Funciona?</h3>
-    <p>Após carregar os dados dos grupos, você pode selecionar um grupo específico, visualizar suas informações e configurar o agendamento do resumo. Escolha entre agendamentos diários ou uma execução única, e o sistema cuida do restante automaticamente.</p>
-    <br/>
-  </div>
-  ''', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">Uma experiência centrada no usuário para gerenciar grupos e agendar resumos de forma prática.</p>', unsafe_allow_html=True)
+    st.markdown('''
+    <div class="content">
+        <h3>O que o Programa Faz?</h3>
+        <p>Este programa permite que você visualize detalhes dos grupos e agende resumos automáticos para grupos ou contatos pessoais com apenas alguns cliques.</p>
+        <p>Use o menu na barra lateral esquerda para navegar para a versão em Português ou Inglês da aplicação.</p>
+        <h3>Como Funciona?</h3>
+        <p>Selecione um grupo, ajuste as configurações de resumo e deixe o sistema cuidar de todo o processo automaticamente.</p>
+    </div>
+    ''', unsafe_allow_html=True)
 
 with tabs[1]:
-  st.markdown('<p class="subtitle">A user-centered experience to manage groups and schedule automated summaries effortlessly.</p>', unsafe_allow_html=True)
-  st.markdown('''
-  <div class="content tab-content">
-    <h3>What Does This Program Do?</h3>
-    <p>This program allows you to view detailed group information, schedule automated summary generation, and send these summaries to groups or personal contacts. Our intuitive interface is designed to provide an efficient and enjoyable experience.</p>
-    <h3>How It Works?</h3>
-    <p>After loading group data, you can select a specific group, view its details, and configure summary scheduling. Choose between daily or one-time tasks, and the system automatically handles the rest.</p>
-    <br/>
-  </div>
-  ''', unsafe_allow_html=True)
-  
+    st.markdown('<p class="subtitle">A user-centered experience to manage groups and schedule automated summaries effortlessly.</p>', unsafe_allow_html=True)
+    st.markdown('''
+    <div class="content">
+        <h3>What Does This Program Do?</h3>
+        <p>This tool lets you view group details and schedule automated summaries to groups or personal contacts in just a few clicks.</p>
+        <p>Use the menu in the left sidebar to navigate to the Portuguese or English version of the application.</p>
+        <h3>How It Works?</h3>
+        <p>Select a group, tweak summary settings, and let the system handle the rest automatically.</p>
+    </div>
+    ''', unsafe_allow_html=True)
+# fecha o wrapper
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Add a note about navigation
+st.sidebar.info("Select a language page above to start managing groups.")
+
 

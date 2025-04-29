@@ -193,11 +193,11 @@ class GroupUtils:
         Parameters:
             selected_group: Group object with group information
         """
-        with st.expander("Informações Gerais / General Information", expanded=False):
-            st.write("**Criador / Creator:**", selected_group.owner)
-            st.write("**Tamanho do Grupo / Group Size:**", selected_group.size)
-            st.write("**Data de Criação / Creation Date:**", self.format_date(selected_group.creation))
-            st.write(f"**Grupo Restrito / Restricted Group:** {self.status_icon(selected_group.restrict)}")
-            st.write(f"**Modo Apenas Administradores / Admin-Only Mode:** {self.status_icon(selected_group.announce)}")
-            st.write(f"**É Comunidade / Is Community:** {self.status_icon(selected_group.is_community)}")
-            st.write(f"**É Comunidade de Anúncios / Is Announcement Community:** {self.status_icon(selected_group.is_community_announce)}")
+        # NÃO use expander aqui! Apenas exiba as informações diretamente.
+        st.write("**Criador / Creator:**", selected_group.owner)
+        st.write("**Tamanho do Grupo / Group Size:**", selected_group.size)
+        st.write("**Data de Criação / Creation Date:**", self.format_date(selected_group.creation))
+        st.write(f"**Grupo Restrito / Restricted Group:** {self.status_icon(selected_group.restrict)}")
+        st.write(f"**Modo Apenas Administradores / Admin-Only Mode:** {self.status_icon(selected_group.announce)}")
+        st.write(f"**É Comunidade / Is Community:** {self.status_icon(selected_group.is_community)}")
+        st.write(f"**É Comunidade de Anúncios / Is Announcement Community:** {self.status_icon(selected_group.is_community_announce)}")

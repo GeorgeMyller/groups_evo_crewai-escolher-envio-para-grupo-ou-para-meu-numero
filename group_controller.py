@@ -48,8 +48,14 @@ class GroupController:
         
         # File paths / Caminhos dos arquivos
         paths_this = os.path.dirname(__file__)
-        self.csv_file = os.path.join(paths_this, "group_summary.csv")
-        self.cache_file = os.path.join(paths_this, "groups_cache.json")
+        data_dir = os.path.join(paths_this, "data")
+        
+        # Criar diretório de dados se não existir
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+            
+        self.csv_file = os.path.join(data_dir, "group_summary.csv")
+        self.cache_file = os.path.join(data_dir, "groups_cache.json")
         
         if not all([self.api_token, self.instance_id, self.instance_token]):
             raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados. / API_TOKEN, INSTANCE_NAME or INSTANCE_TOKEN not configured.")
