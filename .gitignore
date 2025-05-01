@@ -120,3 +120,5 @@ node_modules/
 # Uvicorn (if local)
 # ====================
 # uv.lock
+whatsapp-summarizer.tar.gz
+whatsapp-group-summarizer.tar.gz
