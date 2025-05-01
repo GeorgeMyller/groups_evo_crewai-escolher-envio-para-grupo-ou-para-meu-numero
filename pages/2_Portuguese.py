@@ -180,8 +180,8 @@ with col2:
                     end_time = st.time_input("Hora Final:", value=time.fromisoformat("23:59"))
             is_links = st.checkbox("Incluir Links no Resumo", value=selected_group.is_links)
             is_names = st.checkbox("Incluir Nomes no Resumo", value=selected_group.is_names)
-            send_to_group = st.checkbox("Enviar Resumo para o Grupo", value=True)
-            send_to_personal = st.checkbox("Enviar Resumo para o Meu Celular", value=False)
+            send_to_group = st.checkbox("Enviar Resumo para o Grupo", value=False)
+            send_to_personal = st.checkbox("Enviar Resumo para o Meu Celular", value=True)
             python_script = os.path.join(os.path.dirname(__file__), '..', 'summary.py')
             if st.button("Salvar Configurações"):
                 task_name = f"ResumoGrupo_{selected_group.group_id}"

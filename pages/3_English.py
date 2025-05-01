@@ -178,8 +178,8 @@ with col2:
                     end_time = st.time_input("End Time:", value=time.fromisoformat("23:59"))
             is_links = st.checkbox("Include Links in Summary", value=selected_group.is_links)
             is_names = st.checkbox("Include Names in Summary", value=selected_group.is_names)
-            send_to_group = st.checkbox("Send Summary to Group", value=True)
-            send_to_personal = st.checkbox("Send Summary to My Phone", value=False)
+            send_to_group = st.checkbox("Send Summary to Group", value=False)
+            send_to_personal = st.checkbox("Send Summary to My Phone", value=True)
             python_script = os.path.join(os.path.dirname(__file__), '..', 'summary.py')
             if st.button("Save Settings"):
                 task_name = f"GroupSummary_{selected_group.group_id}"
