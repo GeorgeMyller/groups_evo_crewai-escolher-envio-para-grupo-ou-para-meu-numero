@@ -345,7 +345,7 @@ class GroupController:
             bool: True if successfully updated
         """
         try:
-            df = pd.read_csv("group_summary.csv")
+            df = pd.read_csv(self.csv_file)
         except FileNotFoundError:
             df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script", 
                                      "send_to_group", "send_to_personal",
@@ -371,7 +371,7 @@ class GroupController:
         }
         
         df = pd.concat([df, pd.DataFrame([nova_config])], ignore_index=True)
-        df.to_csv("group_summary.csv", index=False)
+        df.to_csv(self.csv_file, index=False)
         
         return True
 

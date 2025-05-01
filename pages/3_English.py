@@ -229,12 +229,7 @@ with col2:
                                 pass
                             st.success("Settings saved! Scheduling disabled.")
                         if send_to_personal:
-                            personal_number = os.getenv('WHATSAPP_NUMBER')
-                            if personal_number:
-                                sender.textMessage(number=personal_number, msg="Group Summary: ...")
-                                st.success("Summary sent to your phone!")
-                            else:
-                                st.error("Personal number not set in .env")
+                            pass  # Removido envio automático de mensagem ao salvar agendamento
                         t.sleep(2)
                         st.rerun()
                     else:

@@ -1,46 +1,48 @@
-# --- Multi-stage build com Alpine ---
+# syntax=docker/dockerfile:1
 
-# --- Multi-stage build com python:3.12-slim ---
-FROM python:3.12-slim AS builder
+FROM python:3.12-alpine AS builder
 WORKDIR /app
 
-# Instala dependências de build
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
-    build-essential \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Instala apenas as dependências de compilação necessárias (muito mais leve que build-essential)
+RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev 
 
-# Copia arquivos de dependências
-COPY pyproject.toml uv.lock ./
+# Copia só os arquivos de dependências
+COPY requirements-prod.txt ./
 
-# Instala uv
-RUN pip install --no-cache-dir uv
+# Cria ambiente virtual e instala com flags para otimizar tamanho
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements-prod.txt \
+    # Limpa cache e arquivos temporários logo após a instalação
+    && find /opt/venv -name "*.pyc" -delete \
+    && find /opt/venv -name "__pycache__" -type d -exec rm -rf {} +
 
-# Instala dependências do projeto no diretório temporário
-RUN uv pip install --no-cache-dir --prefix=/install .
+# Apenas agora copiamos o código da aplicação
+COPY . .
 
-# Copia código fonte
-COPY app.py group_controller.py group.py groups_util.py message_sandeco.py send_sandeco.py summary_crew.py summary.py task_scheduler.py ./
-COPY pages/ ./pages/
-
-# --- Stage final ---
-FROM python:3.12-slim
+# Imagem final muito menor
+FROM python:3.12-alpine AS final
 WORKDIR /app
 
-# Copia dependências instaladas do builder
-COPY --from=builder /install /usr/local
+# Cria usuário não-root
+RUN adduser -D appuser
 
-# Copia código fonte
-COPY app.py group_controller.py group.py groups_util.py message_sandeco.py send_sandeco.py summary_crew.py summary.py task_scheduler.py ./
-COPY pages/ ./pages/
+# Apenas os binários e bibliotecas essenciais
+RUN apk add --no-cache libffi
 
-# Instala o cron
-RUN apt-get update && apt-get install -y cron
+# Copia apenas venv e código do app real (sem arquivos temporários)
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app /app
 
-# Expondo porta do Streamlit
+# Remove todos os arquivos desnecessários de uma vez
+RUN rm -rf /opt/venv/lib/python*/site-packages/pip* \
+    && rm -rf /opt/venv/lib/python*/site-packages/setuptools* \
+    && rm -rf /opt/venv/lib/python*/site-packages/wheel* \
+    && find /opt/venv -name "*.pyc" -delete \
+    && find /opt -name "__pycache__" -type d -exec rm -rf {} + \
+    && find /app -name "__pycache__" -type d -exec rm -rf {} +
+
+USER appuser
+ENV PATH="/opt/venv/bin:$PATH"
 EXPOSE 8501
-
-ENV PYTHONUNBUFFERED=1
-
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+CMD ["streamlit", "run", "app.py"]

@@ -1,26 +1,19 @@
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
-.Python
-env/
-venv/
-.env
+*.log
+*.csv
+*.json
+data/
+tests/
 .git/
-.gitignore
-*.log
-# Ignore arquivos temporários do sistema/macOS
-.DS_Store
-# Arquivos grandes e backups
-*.tar.gz
-*.bak*
-# Caches
-.cache_ggshield
-# Logs
-*.log
-# CSV temporários ou de saída
+*.md.bak
+*.lock
+*.DS_Store
+.env
+pages/
 group_info.csv
 group_summary.csv
+groups_cache.json
+log_summary.txt
 summary_execution.log
-# Não ignore Dockerfile, docker-compose.yml, scripts de deploy, nem a pasta data/
-    

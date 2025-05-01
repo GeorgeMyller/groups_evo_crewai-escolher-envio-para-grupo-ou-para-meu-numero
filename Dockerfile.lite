@@ -1,0 +1,47 @@
+# Estágio de construção
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+# Instalar dependências necessárias para a compilação
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libffi-dev
+
+# Copiar apenas os requisitos para aproveitar o cache do Docker
+COPY requirements-prod-lite.txt ./
+
+# Criar ambiente virtual e instalar dependências
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements-prod-lite.txt
+
+# Copiar o código da aplicação
+COPY . .
+
+# Estágio final
+FROM python:3.12-slim AS final
+
+WORKDIR /app
+
+# Criar usuário não-root
+RUN useradd -m appuser
+
+# Copiar ambiente virtual do estágio de construção
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app /app
+
+# Garantir que o pip e seus arquivos sejam gravados
+RUN chmod -R +w /opt/venv/lib/python*/site-packages/pip*
+
+# Limpar arquivos desnecessários
+RUN find /opt/venv -name "*.pyc" -delete \
+    && find /opt/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Mudar para o usuário não-root
+USER appuser
+
+ENV PATH="/opt/venv/bin:$PATH"
+EXPOSE 8501
+CMD ["streamlit", "run", "app.py"]
