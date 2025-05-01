@@ -194,6 +194,14 @@ with col2:
                             'end_date': end_date.strftime("%Y-%m-%d"),
                             'end_time': end_time.strftime("%H:%M")
                         })
+                    else:
+                        # Limpa campos de data/hora para agendamento diário
+                        additional_params.update({
+                            'start_date': None,
+                            'start_time': None,
+                            'end_date': None,
+                            'end_time': None
+                        })
                     if control.update_summary(
                         group_id=selected_group.group_id,
                         horario=horario.strftime("%H:%M") if horario else None,

@@ -192,6 +192,14 @@ with col2:
                             'end_date': end_date.strftime("%Y-%m-%d"),
                             'end_time': end_time.strftime("%H:%M")
                         })
+                    else:
+                        # Clear date/time fields for daily scheduling
+                        additional_params.update({
+                            'start_date': None,
+                            'start_time': None,
+                            'end_date': None,
+                            'end_time': None
+                        })
                     if control.update_summary(
                         group_id=selected_group.group_id,
                         horario=summary_time.strftime("%H:%M") if summary_time else None,
