@@ -18,7 +18,7 @@ import logging
 from dotenv import load_dotenv
 from evolutionapi.client import EvolutionClient
 from evolutionapi.models.message import TextMessage, MediaMessage
-load_dotenv()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -40,7 +40,6 @@ class SendSandeco:
         self.evo_instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.evo_instance_token = os.getenv("EVO_INSTANCE_TOKEN")
         self.evo_base_url = os.getenv("EVO_BASE_URL")
-        self.number = os.getenv('NUMBER') or os.getenv('WHATSAPP_NUMBER')  # Get number from .env (compatible with both conventions)
 
         if not all([self.evo_api_token, self.evo_instance_id, self.evo_instance_token, self.evo_base_url]):
             raise EnvironmentError("Missing one or more required environment variables.")
@@ -284,8 +283,10 @@ class SendSandeco:
         """
         self._send_media(number, document_file, "document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", caption)
 
-number = os.getenv('NUMBER') or os.getenv('WHATSAPP_NUMBER')  # Get number from .env (compatível com ambas as convenções)
+number = os.getenv('WHATSAPP_NUMBER')  # Get number from .env
 
+
+"""
 if not number:
     raise EnvironmentError("Missing required environment variable: NUMBER")
 
@@ -293,6 +294,7 @@ sender = SendSandeco()
 
 celular = number
 
-# Teste de mensagem desabilitado
-# sender.textMessage(number=celular, msg="teste de mensagem")
-# logging.info("teste de mensagem")
+sender.textMessage(number=celular,
+                  msg="teste de mensagem")
+logging.info("teste de mensagem")
+"""

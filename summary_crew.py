@@ -27,7 +27,7 @@ class SummaryCrew:
         Sets up the language model and creates the agent crew.
         """
         load_dotenv()
-        self.llm = "gemini/gemini-2.5-flash"
+        self.llm = "gemini/gemini-2.0-flash"
         self.create_crew()
 
     def create_crew(self):

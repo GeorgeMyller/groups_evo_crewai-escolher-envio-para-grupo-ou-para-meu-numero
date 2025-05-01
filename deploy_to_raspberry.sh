@@ -3,7 +3,7 @@
 
 # Configurações
 RASPBERRY_IP="192.168.1.205"
-RASPBERRY_USER="pi"
+RASPBERRY_USER="george"
 IMAGE_NAME="whatsapp-group-summarizer"
 IMAGE_TAG="latest"
 CONTAINER_NAME="whatsapp-summarizer"
@@ -53,9 +53,10 @@ ssh $RASPBERRY_USER@$RASPBERRY_IP << EOF
         --name $CONTAINER_NAME \
         --restart unless-stopped \
         -p 8501:8501 \
-        --env-file ~/.whatsapp_env \
-        $IMAGE_NAME:$IMAGE_TAG
-    
+        --env-file ~/.env \
+        --env-file "${REMOTE_PATH}.env" \
+        --restart unless-stopped ${IMAGE_NAME}:${IMAGE_TAG}
+
     echo "🧹 Limpando arquivo de imagem..."
     rm ~/${IMAGE_NAME}.tar.gz
 EOF

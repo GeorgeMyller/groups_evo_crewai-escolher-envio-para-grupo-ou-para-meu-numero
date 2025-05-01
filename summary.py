@@ -53,7 +53,11 @@ group_id = args.task_name.split("_")[1]
 
 control = GroupController()
 df = control.load_data_by_group(group_id)
-nome = control.find_group_by_id(group_id).name
+group = control.find_group_by_id(group_id)
+if group is None:
+    print(f"Group with ID {group_id} not found.")
+    sys.exit(1)  # Exit with error code
+nome = group.name
 
 # Ensure group summary information is present in group_summary.csv
 # Garante que as informações do resumo do grupo estejam no arquivo group_summary.csv

@@ -1,30 +1,46 @@
-FROM python:3.12-slim
+# --- Multi-stage build com Alpine ---
 
+# --- Multi-stage build com python:3.12-slim ---
+FROM python:3.12-slim AS builder
 WORKDIR /app
 
-# Instalar dependências do sistema
+# Instala dependências de build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copiar arquivos de dependências
+# Copia arquivos de dependências
 COPY pyproject.toml uv.lock ./
 
-# Instalar uv para gerenciamento de pacotes
+# Instala uv
 RUN pip install --no-cache-dir uv
 
-# Instalar dependências do projeto
-RUN uv pip install --system --no-cache-dir .
+# Instala dependências do projeto no diretório temporário
+RUN uv pip install --no-cache-dir --prefix=/install .
 
-# Copiar o código-fonte
-COPY . .
+# Copia código fonte
+COPY app.py group_controller.py group.py groups_util.py message_sandeco.py send_sandeco.py summary_crew.py summary.py task_scheduler.py ./
+COPY pages/ ./pages/
 
-# Expor a porta do Streamlit
+# --- Stage final ---
+FROM python:3.12-slim
+WORKDIR /app
+
+# Copia dependências instaladas do builder
+COPY --from=builder /install /usr/local
+
+# Copia código fonte
+COPY app.py group_controller.py group.py groups_util.py message_sandeco.py send_sandeco.py summary_crew.py summary.py task_scheduler.py ./
+COPY pages/ ./pages/
+
+# Instala o cron
+RUN apt-get update && apt-get install -y cron
+
+# Expondo porta do Streamlit
 EXPOSE 8501
 
-# Configurar ambiente
 ENV PYTHONUNBUFFERED=1
 
-# Comando para executar a aplicação
 CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]

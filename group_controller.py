@@ -16,7 +16,7 @@ import sys
 import os
 import json
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime
 from evolutionapi.client import EvolutionClient
 from group import Group
 import pandas as pd
@@ -48,18 +48,14 @@ class GroupController:
         
         # File paths / Caminhos dos arquivos
         paths_this = os.path.dirname(__file__)
-        data_dir = os.path.join(paths_this, "data")
-        
-        # Criar diretório de dados se não existir
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
-            
-        self.csv_file = os.path.join(data_dir, "group_summary.csv")
-        self.cache_file = os.path.join(data_dir, "groups_cache.json")
+        self.csv_file = os.path.join(paths_this, "group_summary.csv")
+        self.cache_file = os.path.join(paths_this, "groups_cache.json")
         
         if not all([self.api_token, self.instance_id, self.instance_token]):
             raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados. / API_TOKEN, INSTANCE_NAME or INSTANCE_TOKEN not configured.")
-            
+        # Garantir non-null types para o type checker
+        assert self.api_token is not None and self.instance_id is not None and self.instance_token is not None
+
         print(f"Inicializando EvolutionClient com URL / Initializing EvolutionClient with URL: {self.base_url}")
         self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
         self.groups = []
@@ -140,6 +136,7 @@ class GroupController:
         if '<' in self.base_url or '>' in self.base_url:
             print("URL inválida detectada, redefinindo para padrão...")
             self.base_url = 'http://localhost:8081'
+            assert self.api_token is not None, "API token cannot be None"
             self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
             
         max_retries = 3
@@ -147,6 +144,9 @@ class GroupController:
         for attempt in range(max_retries):
             try:
                 print(f"Tentativa {attempt + 1}: Fazendo requisição para {self.base_url}")
+                # Verify that instance_id and instance_token are not None
+                assert self.instance_id is not None, "instance_id cannot be None"
+                assert self.instance_token is not None, "instance_token cannot be None"
                 return self.client.group.fetch_all_groups(
                     instance_id=self.instance_id,
                     instance_token=self.instance_token,
@@ -187,20 +187,8 @@ class GroupController:
         if not force_refresh:
             cache_data = self._load_cache()
             if cache_data and "groups" in cache_data:
-                ts_str = cache_data.get('timestamp')
-                try:
-                    cache_time = datetime.fromisoformat(ts_str)
-                    if datetime.now() - cache_time < timedelta(days=1):
-                        print("Usando dados do cache...")
-                        groups_data = cache_data['groups']
-                    else:
-                        print("Cache expirado (>1 dia). Buscando da API...")
-                        groups_data = self._fetch_from_api()
-                        self._save_cache(groups_data)
-                except Exception:
-                    print("Timestamp inválido no cache. Buscando da API...")
-                    groups_data = self._fetch_from_api()
-                    self._save_cache(groups_data)
+                print("Usando dados do cache...")
+                groups_data = cache_data["groups"]
             else:
                 print("Cache não encontrado. Buscando da API...")
                 groups_data = self._fetch_from_api()
@@ -481,6 +469,11 @@ class GroupController:
             return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
         timestamp_start = to_iso8601(start_date)
         timestamp_end = to_iso8601(end_date)
+        
+        # Ensure instance_id and instance_token are not None
+        assert self.instance_id is not None, "instance_id cannot be None"
+        assert self.instance_token is not None, "instance_token cannot be None"
+        
         group_mensagens = self.client.chat.get_messages(
             instance_id=self.instance_id,
             remote_jid=group_id,

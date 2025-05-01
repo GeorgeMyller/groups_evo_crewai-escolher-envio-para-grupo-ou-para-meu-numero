@@ -1,0 +1,40 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar arquivos de dependências
+COPY pyproject.toml uv.lock ./
+
+# Instalar uv para gerenciamento de pacotes
+RUN pip install --no-cache-dir uv
+
+# Instalar dependências do projeto
+RUN uv pip install --system --no-cache-dir .
+
+# Copiar apenas os arquivos e diretórios necessários para a aplicação
+COPY app.py .
+COPY group_controller.py .
+COPY group.py .
+COPY groups_util.py .
+COPY message_sandeco.py .
+COPY send_sandeco.py .
+COPY summary_crew.py .
+COPY summary.py .
+COPY task_scheduler.py .
+COPY pages/ ./pages/
+# Certifique-se de copiar quaisquer outros arquivos .py ou diretórios necessários
+
+# Expor a porta do Streamlit
+EXPOSE 8501
+
+# Configurar ambiente
+ENV PYTHONUNBUFFERED=1
+
+# Comando para executar a aplicação
+CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]

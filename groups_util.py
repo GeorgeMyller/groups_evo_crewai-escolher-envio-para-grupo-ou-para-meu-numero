@@ -94,8 +94,8 @@ class GroupUtils:
         try:
             if not url:
                 raise ValueError("URL vazio / Empty URL")
-            response = requests.get(url, stream=True, timeout=5)
-            image = Image.open(response.raw).convert("RGBA").resize(size)
+            response = requests.get(url, timeout=5)
+            image = Image.open(BytesIO(response.content)).convert("RGBA").resize(size)
             return image
         except Exception:
             return Image.new("RGBA", size, (200, 200, 200))
@@ -193,7 +193,6 @@ class GroupUtils:
         Parameters:
             selected_group: Group object with group information
         """
-        # NÃO use expander aqui! Apenas exiba as informações diretamente.
         st.write("**Criador / Creator:**", selected_group.owner)
         st.write("**Tamanho do Grupo / Group Size:**", selected_group.size)
         st.write("**Data de Criação / Creation Date:**", self.format_date(selected_group.creation))
