@@ -1,9 +1,14 @@
+
 import os
 import streamlit as st
 from datetime import time, date, datetime
 import time as t
 import pandas as pd
 from dotenv import load_dotenv
+
+
+# --- Light Theme CSS ---
+st.set_page_config(page_title='WhatsApp Group Resumer - PT', layout='wide')
 
 # This page is the Portuguese version of the app
 
@@ -17,54 +22,8 @@ from groups_util import GroupUtils
 from task_scheduler import TaskScheduled
 from send_sandeco import SendSandeco
 
-# Enhanced CSS specific to Portuguese page
 st.markdown("""
-    <style>
-    /* Additional styles specific to Portuguese version */
-    .group-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin: 10px 0;
-        border-left: 4px solid #25D366;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .metric-card {
-        background: linear-gradient(135deg, #25D366, #128C7E);
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .summary-card {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 16px;
-        margin: 10px 0;
-        border-left: 4px solid #128C7E;
-    }
-    
-    .warning-message {
-        color: #856404;
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        padding: 12px;
-        border-radius: 6px;
-        margin: 10px 0;
-    }
-    
-    .success-message {
-        color: #155724;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        padding: 12px;
-        border-radius: 6px;
-        margin: 10px 0;
-    }
-    </style>
+   
 """, unsafe_allow_html=True)
 
 # Initialize core components
@@ -157,7 +116,7 @@ with col1:
         st.warning("Nenhum grupo encontrado!")
 
 with col2:
-    if group_map:
+    if group_map and 'selected_group' in locals():
         st.header("Configurações")
         with st.expander("Configurações do Resumo", expanded=True):
             enabled = st.checkbox("Habilitar Geração do Resumo", value=selected_group.enabled)
