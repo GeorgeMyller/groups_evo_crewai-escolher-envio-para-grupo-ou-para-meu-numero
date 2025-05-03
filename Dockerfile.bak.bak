@@ -2,8 +2,8 @@ FROM python:3.12.10-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cron \
-    curl \
     supervisor \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -27,19 +27,24 @@ WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /app /app
 
+COPY --from=builder /app/WhatsApp_Group_Resumer.py ./WhatsApp_Group_Resumer.py
+COPY --from=builder /app/group.py ./group.py
+COPY --from=builder /app/group_controller.py ./group_controller.py
+COPY --from=builder /app/groups_util.py ./groups_util.py
+COPY --from=builder /app/message_sandeco.py ./message_sandeco.py
+COPY --from=builder /app/send_sandeco.py ./send_sandeco.py
+COPY --from=builder /app/summary_crew.py ./summary_crew.py
+COPY --from=builder /app/summary_lite.py ./summary_lite.py
+COPY --from=builder /app/summary.py ./summary.py
+COPY --from=builder /app/task_scheduler.py ./task_scheduler.py
+COPY --from=builder /app/pages ./pages/
 
-# Copy supervisord.conf to the correct location
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=builder /app/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create a test script for cron
-RUN echo '#!/bin/bash\necho "Cron job executed" >> /tmp/cron_test.log' > /tmp/cron_test.sh && chmod +x /tmp/cron_test.sh
-
-# Add cron job
 RUN touch /etc/cron.d/tasks_app && \
     chmod 0644 /etc/cron.d/tasks_app && \
-    echo "/tmp/cron_test.sh" >> /etc/cron.d/tasks_app
+    crontab /etc/cron.d/tasks_app
 
 EXPOSE 8501
 

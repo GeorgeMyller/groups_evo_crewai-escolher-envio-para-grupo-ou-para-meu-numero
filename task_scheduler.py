@@ -121,13 +121,20 @@ class TaskScheduled:
             if schedule_type.upper() == 'ONCE' and date:
                 command.extend(['/SD', date])
         elif os_name == "Linux":
+            # Caminho absoluto para o script que carrega o .env
+            env_loader_script = "/usr/local/bin/load_env.sh"
+            # Comando que será executado pelo cron
+            cron_command = f"{env_loader_script} {python_executable} {python_script_path} --task_name {task_name}"
+            
             if schedule_type.upper() == 'ONCE' and date:
                 hour, minute = time.split(':')
-                day, month, year = date.split('-')
-                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} {day} {month} * {python_executable} {python_script_path} --task_name {task_name}") | crontab -'
-            else:
+                day, month, year = date.split('-') # Assuming YYYY-MM-DD format
+                # Note: Cron format is MIN HOUR DAY MONTH DAY_OF_WEEK. Year is not directly supported.
+                # This will run once at the specified time on the specified day/month.
+                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} {day} {month} * {cron_command} # TASK_ID:{task_name}") | crontab -'
+            else: # DAILY
                 hour, minute = time.split(':')
-                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} * * * {python_executable} {python_script_path} --task_name {task_name}") | crontab -'
+                command = f'(crontab -l 2>/dev/null ; echo "{minute} {hour} * * * {cron_command} # TASK_ID:{task_name}") | crontab -'
         elif os_name == "Darwin":  
             safe_task_name = task_name.replace('@', '_').replace('.', '_')
             plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -284,8 +291,8 @@ class TaskScheduled:
                 '/F'
             ]
         elif os_name == "Linux":
-            # Remove a tarefa do crontab filtrando entradas que não contenham task_name
-            command = f"crontab -l 2>/dev/null | grep -v '{task_name}' | crontab -"
+            # Remove a tarefa do crontab filtrando pela tag # TASK_ID:{task_name}
+            command = f"crontab -l 2>/dev/null | grep -v '# TASK_ID:{task_name}' | crontab -"
         elif os_name == "Darwin":  
             safe_task_name = task_name.replace('@', '_').replace('.', '_')
             plist_path = os.path.expanduser(f"~/Library/LaunchAgents/{safe_task_name}.plist")

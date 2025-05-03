@@ -1,0 +1,81 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*$py.class
+
+# Ignore markdown, backup, and docs
+*.md
+*.md.bak
+README*
+.DS_Store
+
+
+# Ignore Docker and compose files (not needed in image)
+.dockerignore
+docker-compose*
+
+# Ignore misc
+*.bak
+
+# Ignore virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Ignore environment and config files
+.env
+.env.*
+.envrc
+
+# Ignore logs and runtime files
+*.log
+logs/
+summary_execution.log
+log_summary.txt
+
+# Ignore data and generated files
+data/
+group_info.csv
+group_summary.csv
+groups_cache.json
+
+# Ignore Jupyter and notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore build, dist, and packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+downloads/
+pip-wheel-metadata/
+
+# Ignore IDE/editor/project files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+.DS_Store
+
+# Ignore documentation drafts
+docs/
+
+# Ignore node_modules if present
+node_modules/
+
+# Ignore backup files
+*.bak
+
+# Ignore secret scanning cache
+.cache_ggshield
+
+# Ignore optional lockfiles
+poetry.lock
+Pipfile.lock
+
+# Ignore README backups
+README.md.bak
