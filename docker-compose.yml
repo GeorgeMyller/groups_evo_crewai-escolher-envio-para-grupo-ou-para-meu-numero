@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: groups-evo-crewai
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
