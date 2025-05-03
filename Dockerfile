@@ -3,8 +3,8 @@
 FROM python:3.12-alpine AS builder
 WORKDIR /app
 
-# Instala apenas as dependências de compilação necessárias (muito mais leve que build-essential)
-RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev 
+# Instala dependências de compilação necessárias (inclui Rust/Cargo para chromadb/CrewAI)
+RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev rust cargo
 
 # Copia só os arquivos de dependências
 COPY requirements-prod.txt ./
