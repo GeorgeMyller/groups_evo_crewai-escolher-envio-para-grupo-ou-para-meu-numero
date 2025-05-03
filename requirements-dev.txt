@@ -1,4 +1,0 @@
-# Dependências de desenvolvimento (exemplo)
-pytest
-black
-flake8
