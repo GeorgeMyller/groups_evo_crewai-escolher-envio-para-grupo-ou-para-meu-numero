@@ -129,6 +129,9 @@ Mensagens para análise / Messages for analysis:
             str: Formatted summary following the template
         """
         result = self.crew.kickoff(inputs=inputs).raw
+        # Remove 'text' do início, se existir
+        if result.strip().startswith('text'):
+            result = result.strip()[4:].lstrip('\n: ')
         return result
     
 
