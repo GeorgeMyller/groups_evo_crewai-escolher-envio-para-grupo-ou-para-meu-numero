@@ -1,2 +1,3 @@
 group_id,dias,horario,enabled,is_links,is_names,send_to_group,send_to_personal,script,start_date,start_time,end_date,end_time
-120363398170141701@g.us,,,True,True,True,False,True,/Volumes/SSD-EXTERNO/2025/Abril/livro_mcp/groups_evo_crewai-escolher-envio-para-grupo-ou-para-meu-numero/pages/../summary.py,2025-05-03,00:00,2025-05-03,23:59
+120363389417559087@g.us,,,True,False,False,False,True,/Volumes/SSD-EXTERNO/2025/Abril/livro_mcp/groups_evo_crewai-escolher-envio-para-grupo-ou-para-meu-numero/pages/../summary.py,2025-05-04,00:00,2025-05-04,23:59
+120363383673368986@g.us,,,True,True,True,True,True,/Volumes/SSD-EXTERNO/2025/Abril/livro_mcp/groups_evo_crewai-escolher-envio-para-grupo-ou-para-meu-numero/pages/../summary.py,2025-05-04,00:00,2025-05-04,23:59

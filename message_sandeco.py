@@ -299,13 +299,13 @@ class MessageSandeco:
         return self.push_name
     
     @staticmethod
-    def get_messages(messages):
+    def get_messages(messages: dict) -> list['MessageSandeco']:
         """
-        PT-BR:
+        PT:
         Converte um dicionário de mensagens em objetos MessageSandeco.
         
         Parâmetros:
-            messages: Dicionário com registros de mensagens
+            messages: Dicionário com os registros das mensagens
             
         Retorna:
             List[MessageSandeco]: Lista de objetos de mensagem processados
@@ -319,6 +319,14 @@ class MessageSandeco:
         Returns:
             List[MessageSandeco]: List of processed message objects
         """
-        msgs = messages['messages']['records']
-        mensagens = [MessageSandeco(msg) for msg in msgs]
+        # Use .get() to safely access nested keys and provide default values
+        msgs_data = messages.get('messages', {})
+        records = msgs_data.get('records', [])
+        
+        if not records:
+            # Handle the case where no messages are found or keys are missing
+            print("Warning: No message records found in the response or keys 'messages'/'records' missing.")
+            return []  # Return an empty list if no records found
+
+        mensagens = [MessageSandeco(msg) for msg in records]
         return mensagens
