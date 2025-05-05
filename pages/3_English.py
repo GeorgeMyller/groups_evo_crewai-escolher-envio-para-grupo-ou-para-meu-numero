@@ -64,6 +64,14 @@ def delete_scheduled_group(group_id):
 
 with col1:
     st.header("Select a Group")
+    if st.button("Refresh Group List"):
+        with st.spinner("Refreshing groups..."):
+             # Use force_refresh=True to bypass cache
+            control.fetch_groups(force_refresh=True)
+            st.success("Group list updated!")
+            t.sleep(1) # Short pause to show message
+            st.rerun()
+
     if group_map:
         selected_group_id = st.selectbox(
             "Choose a group:",

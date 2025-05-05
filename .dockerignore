@@ -38,8 +38,6 @@ log_summary.txt
 
 # Ignore data and generated files
 data/
-group_info.csv
-group_summary.csv
 groups_cache.json
 
 # Ignore Jupyter and notebook checkpoints

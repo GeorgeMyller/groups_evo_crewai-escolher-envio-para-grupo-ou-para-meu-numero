@@ -1,4 +1,3 @@
-
 import os
 import streamlit as st
 from datetime import time, date, datetime
@@ -66,6 +65,14 @@ def delete_scheduled_group(group_id):
 
 with col1:
     st.header("Selecione um Grupo")
+    if st.button("Atualizar Lista de Grupos"):
+        with st.spinner("Atualizando grupos..."):
+            # Use force_refresh=True to bypass cache
+            control.fetch_groups(force_refresh=True) 
+            st.success("Lista de grupos atualizada!")
+            t.sleep(1) # Short pause to show message
+            st.rerun()
+
     if group_map:
         selected_group_id = st.selectbox(
             "Escolha um grupo:",
