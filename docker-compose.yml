@@ -3,14 +3,8 @@ services:
   app:
     build: .
     container_name: groups-evo-crewai
-    environment:
-      EVO_API_TOKEN: ***REMOVED_EVO_TOKEN***
-      EVO_INSTANCE_TOKEN: C63C13D1E99E-42D0-9E39-7D8DA0655E82
-      EVO_INSTANCE_NAME: AgentGeorgeMyller
-      EVO_BASE_URL: http://192.168.1.151:8081/
-      GEMINI_API_KEY: ***REMOVED_GEMINI_KEY***
-      WHATSAPP_NUMBER: 351912331561
-      NUMBER: 351912331561
+    env_file:
+      - .env # Carrega variáveis do arquivo .env
     ports:
       - "8501:8501"
     restart: unless-stopped
