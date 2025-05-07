@@ -103,6 +103,14 @@ if df and df.get('enabled', False):
     cont = len(msgs)
     print(f"Total de mensagens: {cont}")
 
+    # Carrega o valor de min_messages_summary do group_summary.csv
+    min_messages_config = df.get('min_messages_summary', 50) # Default para 50 se não encontrado
+
+    # Verifica se o total de mensagens é superior ao configurado
+    if cont <= min_messages_config:
+        print(f"O número de mensagens ({cont}) é inferior ou igual ao configurado ({min_messages_config}). O resumo não será gerado.")
+        sys.exit(0) # Sai sem erro, pois não é uma falha, mas uma condição não atendida
+
     # Delay for processing
     # Aguarda processamento
     time.sleep(20)

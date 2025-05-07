@@ -272,7 +272,7 @@ class GroupController:
             return pd.DataFrame(columns=[
                 "group_id", "dias", "horario", "enabled", 
                 "is_links", "is_names", "send_to_group", 
-                "send_to_personal"
+                "send_to_personal", "min_messages_summary" # Adicionar nova coluna
             ])
 
     def load_data_by_group(self, group_id):
@@ -302,7 +302,7 @@ class GroupController:
         except Exception:
             return False
 
-    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, send_to_group=True, send_to_personal=False, start_date=None, start_time=None, end_date=None, end_time=None):
+    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, send_to_group=True, send_to_personal=False, start_date=None, start_time=None, end_date=None, end_time=None, min_messages_summary=50): # Adicionar novo parâmetro com valor default
         """
         PT-BR:
         Atualiza configurações de resumo de um grupo no CSV.
@@ -320,6 +320,7 @@ class GroupController:
             start_time: Hora inicial (opcional)
             end_date: Data final (opcional)
             end_time: Hora final (opcional)
+            min_messages_summary: Mínimo de mensagens para gerar resumo (opcional)
 
         Retorna:
             bool: True se atualizado com sucesso
@@ -340,6 +341,7 @@ class GroupController:
             start_time: Start time (optional)
             end_date: End date (optional)
             end_time: End time (optional)
+            min_messages_summary: Minimum messages to generate summary (optional)
 
         Returns:
             bool: True if successfully updated
@@ -349,7 +351,7 @@ class GroupController:
         except FileNotFoundError:
             df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script", 
                                      "send_to_group", "send_to_personal",
-                                     "start_date", "start_time", "end_date", "end_time"])
+                                     "start_date", "start_time", "end_date", "end_time", "min_messages_summary"]) # Adicionar nova coluna
         
         # Remove qualquer entrada existente para o grupo
         df = df[df['group_id'] != group_id]
@@ -367,7 +369,8 @@ class GroupController:
             "start_date": start_date if start_date else None,
             "start_time": start_time if start_time else None,
             "end_date": end_date if end_date else None,
-            "end_time": end_time if end_time else None
+            "end_time": end_time if end_time else None,
+            "min_messages_summary": min_messages_summary # Adicionar novo campo
         }
         
         df = pd.concat([df, pd.DataFrame([nova_config])], ignore_index=True)

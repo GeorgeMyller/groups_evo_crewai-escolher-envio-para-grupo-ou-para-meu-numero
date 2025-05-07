@@ -30,7 +30,8 @@ class Group:
                  is_links=False,
                  is_names=False,
                  send_to_group=True,
-                 send_to_personal=False):
+                 send_to_personal=False,
+                 min_messages_summary=50):  # Novo atributo com valor padrão
         """
         PT-BR:
         Inicializa um grupo com suas propriedades e configurações de resumo.
@@ -55,6 +56,7 @@ class Group:
             is_names: Incluir nomes (padrão: False)
             send_to_group: Enviar para o grupo (padrão: True)
             send_to_personal: Enviar para pessoal (padrão: False)
+            min_messages_summary: Mínimo de mensagens para resumo (padrão: 50)
 
         EN:
         Initializes a group with its properties and summary settings.
@@ -79,6 +81,7 @@ class Group:
             is_names: Include names (default: False)
             send_to_group: Send to group (default: True)
             send_to_personal: Send to personal (default: False)
+            min_messages_summary: Minimum messages for summary (default: 50)
         """
         self.group_id = group_id
         self.name = name
@@ -100,6 +103,7 @@ class Group:
         self.is_names = is_names
         self.send_to_group = send_to_group
         self.send_to_personal = send_to_personal
+        self.min_messages_summary = min_messages_summary  # Armazena o novo atributo
 
     def __repr__(self):
         """

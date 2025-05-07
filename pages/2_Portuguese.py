@@ -148,6 +148,7 @@ with col2:
             is_names = st.checkbox("Incluir Nomes no Resumo", value=selected_group.is_names)
             send_to_group = st.checkbox("Enviar Resumo para o Grupo", value=False)
             send_to_personal = st.checkbox("Enviar Resumo para o Meu Celular", value=True)
+            min_messages_summary = st.slider("Mínimo de Mensagens para Gerar Resumo:", 1, 200, 50) # Novo slider
             python_script = os.path.join(os.path.dirname(__file__), '..', 'summary.py')
             if st.button("Salvar Configurações"):
                 task_name = f"ResumoGrupo_{selected_group.group_id}"
@@ -177,6 +178,7 @@ with col2:
                         send_to_group=send_to_group,
                         send_to_personal=send_to_personal,
                         script=python_script,
+                        min_messages_summary=min_messages_summary,  # Passar o novo valor
                         **additional_params
                     ):
                         if enabled:
