@@ -13,10 +13,10 @@ st.set_page_config(page_title='WhatsApp Group Resumer - PT', layout='wide')
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-st.write(f"Carregando .env de: {env_path}")
+# st.write(f"Carregando .env de: {env_path}") # Removido para UI mais limpa
 load_dotenv(env_path)
 
-from group_controller import GroupController
+from src.core.controllers.group_controller import GroupController # MODIFICADO
 from groups_util import GroupUtils
 from task_scheduler import TaskScheduled
 from send_sandeco import SendSandeco
@@ -28,6 +28,11 @@ st.markdown("""
 # Initialize core components
 control = GroupController()
 groups = control.fetch_groups()
+
+if not groups:
+    st.error("Falha ao carregar os grupos. Verifique as credenciais da API e a conexão de rede.")
+    st.stop() # Impede a execução do restante da página se os grupos não forem carregados
+
 ut = GroupUtils()
 group_map, options = ut.map(groups)
 
@@ -49,7 +54,7 @@ def delete_scheduled_group(group_id):
         if group_id not in df['group_id'].values:
             st.error(f"Grupo com ID {group_id} não encontrado!")
             return False
-        task_name = f"ResumoGrupo_{group_id}"
+        task_name = f"GroupSummary_{group_id}"  # Alterado de ResumoGrupo_
         try:
             TaskScheduled.delete_task(task_name)
             st.success(f"Tarefa {task_name} removida do sistema")
@@ -67,8 +72,8 @@ with col1:
     st.header("Selecione um Grupo")
     if st.button("Atualizar Lista de Grupos"):
         with st.spinner("Atualizando grupos..."):
-            # Use force_refresh=True to bypass cache
-            control.fetch_groups(force_refresh=True) 
+            # Use use_cache=False to bypass cache
+            control.fetch_groups(use_cache=False) 
             st.success("Lista de grupos atualizada!")
             t.sleep(1) # Short pause to show message
             st.rerun()
@@ -151,7 +156,7 @@ with col2:
             min_messages_summary = st.slider("Mínimo de Mensagens para Gerar Resumo:", 1, 200, 50) # Novo slider
             python_script = os.path.join(os.path.dirname(__file__), '..', 'summary.py')
             if st.button("Salvar Configurações"):
-                task_name = f"ResumoGrupo_{selected_group.group_id}"
+                task_name = f"GroupSummary_{selected_group.group_id}"
                 try:
                     additional_params = {}
                     if periodicidade == "Uma vez":
@@ -178,7 +183,7 @@ with col2:
                         send_to_group=send_to_group,
                         send_to_personal=send_to_personal,
                         script=python_script,
-                        min_messages_summary=min_messages_summary,  # Passar o novo valor
+                        min_messages_summary=min_messages_summary,
                         **additional_params
                     ):
                         if enabled:
@@ -190,24 +195,27 @@ with col2:
                                     time=horario.strftime("%H:%M")
                                 )
                                 st.success(f"Configurações salvas! O resumo será executado diariamente às {horario.strftime('%H:%M')}")
-                            else:
+                            else: # Uma vez
+                                # Para execução única, agendamos para o próximo minuto para teste imediato
+                                # Idealmente, você usaria start_date e start_time aqui
                                 next_minute = datetime.now().replace(second=0, microsecond=0) + pd.Timedelta(minutes=1)
                                 TaskScheduled.create_task(
                                     task_name=task_name,
                                     python_script_path=python_script,
                                     schedule_type='ONCE',
-                                    date=next_minute.strftime("%Y-%m-%d"),
-                                    time=next_minute.strftime("%H:%M")
+                                    date=next_minute.strftime("%Y-%m-%d"), # Usar start_date se preferir
+                                    time=next_minute.strftime("%H:%M") # Usar start_time se preferir
                                 )
                                 st.success(f"Configurações salvas! O resumo será executado em {next_minute.strftime('%d/%m/%Y às %H:%M')}")
                         else:
                             try:
                                 TaskScheduled.delete_task(task_name)
                             except Exception:
-                                pass
+                                pass # Ignora erro se a tarefa não existir
                             st.success("Configurações salvas! Agendamento desativado.")
-                        if send_to_personal:
-                            pass  # Removido envio automático de mensagem ao salvar agendamento
+                        # if send_to_personal: # Comentado para evitar envio de msg ao salvar
+                        #     # sender.send_message_to_personal_number(f"Configurações do resumo para o grupo '{selected_group.name}' salvas.")
+                        #     pass
                         t.sleep(2)
                         st.rerun()
                     else:

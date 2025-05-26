@@ -16,5 +16,39 @@ dependencies = [
     "requests>=2.31.0",
     "python-dateutil>=2.8.2",
     "plotly>=6.0.1",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "redis[hiredis]>=6.1.0",
+    "hiredis>=3.2.1",
+    "prometheus-client>=0.22.0",
+    "psutil>=7.0.0",
+    "structlog>=25.3.0",
+    "click>=8.1.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--tb=short"
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "venv/*",
+    "*/__pycache__/*",
+    "*.pyc"
 ]
 

@@ -12,10 +12,10 @@ st.set_page_config(page_title='WhatsApp Group Resumer - EN', layout='wide')
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-# st.write(f"Loading .env from: {env_path}") # Removed for cleaner UI
+st.write(f"Loading .env from: {env_path}")
 load_dotenv(env_path)
 
-from src.core.controllers.group_controller import GroupController
+from group_controller import GroupController
 from groups_util import GroupUtils
 from task_scheduler import TaskScheduled
 from send_sandeco import SendSandeco
@@ -27,11 +27,6 @@ st.markdown("""
 # Initialize core components
 control = GroupController()
 groups = control.fetch_groups()
-
-if not groups:
-    st.error("Failed to load groups. Please check API credentials and network connection.")
-    st.stop() # Stops further execution if groups are not loaded
-
 ut = GroupUtils()
 group_map, options = ut.map(groups)
 
@@ -71,8 +66,8 @@ with col1:
     st.header("Select a Group")
     if st.button("Refresh Group List"):
         with st.spinner("Refreshing groups..."):
-             # Use use_cache=False to bypass cache
-            control.fetch_groups(use_cache=False)
+             # Use force_refresh=True to bypass cache
+            control.fetch_groups(force_refresh=True)
             st.success("Group list updated!")
             t.sleep(1) # Short pause to show message
             st.rerun()

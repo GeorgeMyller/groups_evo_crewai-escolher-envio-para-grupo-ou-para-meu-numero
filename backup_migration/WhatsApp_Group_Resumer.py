@@ -1,20 +1,6 @@
 import streamlit as st
 
-# Set page config MUST be first Streamlit command
 st.set_page_config(page_title='WhatsApp Group Resumer', layout='wide')
-
-# Inicializar infraestrutura de escalabilidade
-from infrastructure_service import init_infrastructure_sync
-
-# Inicializar infraestrutura no início da aplicação
-if 'infrastructure_check' not in st.session_state:
-    st.session_state.infrastructure_check = True
-    with st.spinner("🚀 Inicializando sistema..."):
-        success = init_infrastructure_sync()
-        if success:
-            st.session_state.infrastructure_ready = True
-        else:
-            st.session_state.infrastructure_ready = False
 
 # --- Light Theme CSS ---
 st.markdown("""

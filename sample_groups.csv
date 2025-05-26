@@ -1,0 +1,6 @@
+id,name,description,member_count,created_at,last_activity
+1,Equipe Dev,"Grupo da equipe de desenvolvimento",25,"2025-01-15 10:00:00","2025-05-26 19:30:00"
+2,Suporte Técnico,"Canal de suporte e dúvidas técnicas",45,"2025-02-01 14:20:00","2025-05-26 18:45:00"
+3,Reuniões Gerais,"Grupo para comunicados gerais da empresa",120,"2024-12-10 09:00:00","2025-05-26 16:20:00"
+4,Marketing Digital,"Estratégias e campanhas de marketing",18,"2025-03-05 11:30:00","2025-05-26 20:00:00"
+5,Vendas,"Equipe comercial e vendas",32,"2025-01-20 08:45:00","2025-05-26 19:15:00"
