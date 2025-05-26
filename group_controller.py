@@ -18,6 +18,7 @@ import json
 from dotenv import load_dotenv
 from datetime import datetime
 from evolutionapi.client import EvolutionClient
+from evolutionapi.exceptions import EvolutionAuthenticationError, EvolutionAPIError
 from group import Group
 import pandas as pd
 from message_sandeco import MessageSandeco
@@ -152,6 +153,14 @@ class GroupController:
                     instance_token=self.instance_token,
                     get_participants=False
                 )
+            except EvolutionAuthenticationError as e:
+                print(f"Erro de autenticação: {str(e)}")
+                print("Verifique suas credenciais no arquivo .env:")
+                print(f"- EVO_API_TOKEN: {'✓' if self.api_token else '✗'}")
+                print(f"- EVO_INSTANCE_NAME: {'✓' if self.instance_id else '✗'}")
+                print(f"- EVO_INSTANCE_TOKEN: {'✓' if self.instance_token else '✗'}")
+                print(f"- EVO_BASE_URL: {self.base_url}")
+                raise e
             except EvolutionAPIError as e:
                 if 'rate-overlimit' in str(e) and attempt < max_retries - 1:
                     wait_time = base_delay * (2 ** attempt)

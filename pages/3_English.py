@@ -66,11 +66,29 @@ with col1:
     st.header("Select a Group")
     if st.button("Refresh Group List"):
         with st.spinner("Refreshing groups..."):
-             # Use force_refresh=True to bypass cache
-            control.fetch_groups(force_refresh=True)
-            st.success("Group list updated!")
-            t.sleep(1) # Short pause to show message
-            st.rerun()
+            try:
+                 # Use force_refresh=True to bypass cache
+                control.fetch_groups(force_refresh=True)
+                st.success("Group list updated!")
+                t.sleep(1) # Short pause to show message
+                st.rerun()
+            except Exception as e:
+                if "autenticação" in str(e).lower() or "authentication" in str(e).lower():
+                    st.error("❌ **Authentication Error**")
+                    st.error("Please check your Evolution API credentials in the .env file:")
+                    with st.expander("Error details"):
+                        st.code(str(e))
+                    st.info("💡 **Tips to resolve:**")
+                    st.markdown("""
+                    - Check if Evolution API server is running at http://192.168.1.151:8081
+                    - Verify that EVO_API_TOKEN is correct
+                    - Ensure EVO_INSTANCE_NAME and EVO_INSTANCE_TOKEN are valid
+                    - Test the connection directly in browser or with curl
+                    """)
+                else:
+                    st.error(f"Error updating groups: {str(e)}")
+                    with st.expander("Error details"):
+                        st.code(str(e))
 
     if group_map:
         selected_group_id = st.selectbox(

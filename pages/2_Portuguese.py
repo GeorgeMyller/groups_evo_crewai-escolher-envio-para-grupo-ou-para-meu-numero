@@ -26,14 +26,40 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize core components
-control = GroupController()
-groups = control.fetch_groups()
-ut = GroupUtils()
-group_map, options = ut.map(groups)
-
-sender = SendSandeco()
+try:
+    control = GroupController()
+    groups = control.fetch_groups()
+    ut = GroupUtils()
+    group_map, options = ut.map(groups)
+    sender = SendSandeco()
+    initialization_error = None
+except Exception as e:
+    control = None
+    groups = []
+    ut = None
+    group_map = {}
+    options = []
+    sender = None
+    initialization_error = str(e)
 
 col1, col2 = st.columns([1, 1])
+
+# Check for initialization errors
+if initialization_error:
+    st.error("❌ **Erro na Inicialização**")
+    if "autenticação" in initialization_error.lower():
+        st.error("Erro de autenticação com a API Evolution:")
+        with st.expander("Detalhes do erro"):
+            st.code(initialization_error)
+        st.info("💡 **Verifique:**")
+        st.markdown("""
+        - Se o servidor Evolution API está rodando
+        - Se as credenciais no arquivo .env estão corretas
+        - Se a URL base está acessível
+        """)
+    else:
+        st.error(f"Erro: {initialization_error}")
+    st.stop()  # Stop execution if there's an initialization error
 
 def load_scheduled_groups():
     try:
@@ -66,12 +92,33 @@ def delete_scheduled_group(group_id):
 with col1:
     st.header("Selecione um Grupo")
     if st.button("Atualizar Lista de Grupos"):
+        if control is None:
+            st.error("Sistema não inicializado corretamente. Verifique as configurações.")
+            st.stop()
         with st.spinner("Atualizando grupos..."):
-            # Use force_refresh=True to bypass cache
-            control.fetch_groups(force_refresh=True) 
-            st.success("Lista de grupos atualizada!")
-            t.sleep(1) # Short pause to show message
-            st.rerun()
+            try:
+                # Use force_refresh=True to bypass cache
+                control.fetch_groups(force_refresh=True) 
+                st.success("Lista de grupos atualizada!")
+                t.sleep(1) # Short pause to show message
+                st.rerun()
+            except Exception as e:
+                if "autenticação" in str(e).lower():
+                    st.error("❌ **Erro de Autenticação**")
+                    st.error("Verifique suas credenciais da API Evolution no arquivo .env:")
+                    with st.expander("Detalhes do erro"):
+                        st.code(str(e))
+                    st.info("💡 **Dicas para resolver:**")
+                    st.markdown("""
+                    - Verifique se o servidor Evolution API está rodando em http://192.168.1.151:8081
+                    - Confirme se o EVO_API_TOKEN está correto
+                    - Verifique se o EVO_INSTANCE_NAME e EVO_INSTANCE_TOKEN estão válidos
+                    - Teste a conexão diretamente no navegador ou com curl
+                    """)
+                else:
+                    st.error(f"Erro ao atualizar grupos: {str(e)}")
+                    with st.expander("Detalhes do erro"):
+                        st.code(str(e))
 
     if group_map:
         selected_group_id = st.selectbox(
