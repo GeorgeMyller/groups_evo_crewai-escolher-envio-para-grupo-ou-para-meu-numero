@@ -23,10 +23,13 @@ from group import Group
 import pandas as pd
 from message_sandeco import MessageSandeco
 from task_scheduler import TaskScheduled
+import logging # Added
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 class GroupController:
+    logger = logging.getLogger(__name__) # Added logger
+
     def __init__(self):
         """
         PT-BR:
@@ -476,27 +479,60 @@ class GroupController:
         Returns:
             List[Message]: List of filtered messages
         """
+        self.logger.info(f"Fetching messages for group {group_id} from {start_date} to {end_date}")
+
         def to_iso8601(date_str):
             dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        timestamp_start = to_iso8601(start_date)
-        timestamp_end = to_iso8601(end_date)
+
+        timestamp_start_iso = to_iso8601(start_date)
+        timestamp_end_iso = to_iso8601(end_date)
         
-        # Ensure instance_id and instance_token are not None
         assert self.instance_id is not None, "instance_id cannot be None"
         assert self.instance_token is not None, "instance_token cannot be None"
         
-        group_mensagens = self.client.chat.get_messages(
-            instance_id=self.instance_id,
-            remote_jid=group_id,
-            instance_token=self.instance_token,
-            timestamp_start=timestamp_start,
-            timestamp_end=timestamp_end,
-            page=1,
-            offset=1000
-        )
-        msgs = MessageSandeco.get_messages(group_mensagens)
-        data_obj = datetime.strptime(timestamp_start, "%Y-%m-%dT%H:%M:%SZ")
-        timestamp_limite = int(data_obj.timestamp())
-        msgs_filtradas = [msg for msg in msgs if msg.message_timestamp >= timestamp_limite]
+        group_mensagens_raw = None
+        msgs_processed = []
+        msgs_filtradas = []
+
+        try:
+            self.logger.info(f"Calling Evolution API: client.chat.get_messages for group {group_id}")
+            group_mensagens_raw = self.client.chat.get_messages(
+                instance_id=self.instance_id,
+                remote_jid=group_id,
+                instance_token=self.instance_token,
+                timestamp_start=timestamp_start_iso,
+                timestamp_end=timestamp_end_iso,
+                page=1,
+                offset=1000 # Consider making offset configurable or handling pagination if needed
+            )
+            self.logger.debug(f"Raw API response for group {group_id}: {group_mensagens_raw}")
+
+            msgs_processed = MessageSandeco.get_messages(group_mensagens_raw)
+            self.logger.info(f"Processed {len(msgs_processed)} messages by MessageSandeco for group {group_id}.")
+            self.logger.debug(f"Processed messages content (first few if many): {msgs_processed[:3]}")
+
+            data_obj = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S")
+            timestamp_limite = int(data_obj.timestamp())
+
+            valid_messages_for_filtering = []
+            for msg in msgs_processed:
+                if hasattr(msg, 'message_timestamp') and msg.message_timestamp is not None:
+                    try:
+                        if int(msg.message_timestamp) >= timestamp_limite:
+                            valid_messages_for_filtering.append(msg)
+                    except ValueError:
+                        self.logger.warning(f"Could not convert msg.message_timestamp '{msg.message_timestamp}' to int for comparison.")
+                else:
+                    self.logger.warning(f"Message object lacks 'message_timestamp' or it is None. Msg: {msg}")
+
+            msgs_filtradas = valid_messages_for_filtering
+            self.logger.info(f"Filtered messages for group {group_id}: {len(msgs_filtradas)} messages after timestamp limit.")
+            self.logger.debug(f"Filtered messages content (first few if many): {msgs_filtradas[:3]}")
+
+        except EvolutionAPIError as e:
+            self.logger.error(f"Evolution API error while fetching messages for group {group_id}: {e}", exc_info=True)
+        except Exception as e:
+            self.logger.error(f"Unexpected error while fetching or processing messages for group {group_id}: {e}", exc_info=True)
+
         return msgs_filtradas

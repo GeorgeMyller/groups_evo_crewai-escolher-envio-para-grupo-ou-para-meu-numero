@@ -1,4 +1,5 @@
 import base64
+import logging # Added
 
 """
 Processador de Mensagens do WhatsApp / WhatsApp Message Processor
@@ -22,6 +23,7 @@ class MessageSandeco:
     # Message Scopes / Escopos de Mensagem
     SCOPE_GROUP = "group"
     SCOPE_PRIVATE = "private"
+    logger = logging.getLogger(__name__) # Added logger
     
     def __init__(self, raw_data):
         """
@@ -319,14 +321,35 @@ class MessageSandeco:
         Returns:
             List[MessageSandeco]: List of processed message objects
         """
-        # Use .get() to safely access nested keys and provide default values
-        msgs_data = messages.get('messages', {})
-        records = msgs_data.get('records', [])
-        
-        if not records:
-            # Handle the case where no messages are found or keys are missing
-            print("Warning: No message records found in the response or keys 'messages'/'records' missing.")
-            return []  # Return an empty list if no records found
+        MessageSandeco.logger.info(f"Attempting to process messages from input: {type(messages)}")
 
-        mensagens = [MessageSandeco(msg) for msg in records]
-        return mensagens
+        if not isinstance(messages, dict):
+            MessageSandeco.logger.warning(f"Input 'messages' is not a dictionary. Received: {type(messages)}. Returning empty list.")
+            return []
+
+        msgs_container = messages.get('messages')
+        if not isinstance(msgs_container, dict):
+            MessageSandeco.logger.warning(f"'messages' key not found or is not a dictionary. Received: {type(msgs_container)}. Input keys: {list(messages.keys())}. Returning empty list.")
+            return []
+
+        records = msgs_container.get('records')
+        if not isinstance(records, list):
+            MessageSandeco.logger.warning(f"'records' key not found or is not a list. Received: {type(records)}. Container keys: {list(msgs_container.keys())}. Returning empty list.")
+            return []
+        
+        if not records: # Corrected typo from 'if not records:' to 'if not msgs_data:' (actually, it should be 'if not records:' here, as records is already extracted)
+            MessageSandeco.logger.info("No message records found in the 'records' list. Returning empty list.")
+            return []
+
+        processed_messages = []
+        for i, msg_data in enumerate(records):
+            if isinstance(msg_data, dict):
+                try:
+                    processed_messages.append(MessageSandeco(msg_data))
+                except Exception as e:
+                    MessageSandeco.logger.error(f"Error initializing MessageSandeco for record #{i}: {msg_data}. Error: {e}", exc_info=True)
+            else:
+                MessageSandeco.logger.warning(f"Item #{i} in 'records' is not a dictionary, skipping. Received type: {type(msg_data)}, Data: {msg_data}")
+
+        MessageSandeco.logger.info(f"Successfully processed {len(processed_messages)} out of {len(records)} records.")
+        return processed_messages
