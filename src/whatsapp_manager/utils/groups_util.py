@@ -18,8 +18,21 @@ from io import BytesIO
 # Third-party library imports
 import pandas as pd
 import requests
-import streamlit as st
-from PIL import Image
+
+# Optional imports for UI functionality
+try:
+    import streamlit as st
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+    st = None
+
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    Image = None
 
 
 class GroupUtils:
@@ -95,14 +108,17 @@ class GroupUtils:
         Returns:
             Image: Processed PIL Image
         """
+        if not PIL_AVAILABLE or Image is None:
+            return None
+            
         try:
             if not url:
                 raise ValueError("URL vazio / Empty URL")
             response = requests.get(url, timeout=5)
-            image = Image.open(BytesIO(response.content)).convert("RGBA").resize(size)
+            image = Image.open(BytesIO(response.content)).convert("RGBA").resize(size)  # type: ignore
             return image
         except Exception:
-            return Image.new("RGBA", size, (200, 200, 200))
+            return Image.new("RGBA", size, (200, 200, 200))  # type: ignore
 
     def map(self, groups):
         """

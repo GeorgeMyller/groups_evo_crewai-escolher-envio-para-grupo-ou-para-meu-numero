@@ -18,17 +18,30 @@ import sys
 import time
 from datetime import datetime, timedelta # Keep as is, or split if strict one-per-line for all froms
 
-# Third-party library imports
-from dotenv import load_dotenv
-
-# Local application/library imports
-from .group_controller import GroupController
-from .summary_crew import SummaryCrew
-from .send_sandeco import SendSandeco
-
 # Define Project Root assuming this file is src/whatsapp_manager/core/summary.py
 # Navigate three levels up to reach the project root from core.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
+# Add src directory to Python path to enable absolute imports when running as script
+import sys
+src_path = os.path.join(PROJECT_ROOT, 'src')
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
+# Third-party library imports
+from dotenv import load_dotenv
+
+# Local application/library imports - try relative first, fallback to absolute
+try:
+    # This works when imported as a module
+    from .group_controller import GroupController
+    from .summary_crew import SummaryCrew
+    from .send_sandeco import SendSandeco
+except ImportError:
+    # This works when executed as a script
+    from whatsapp_manager.core.group_controller import GroupController
+    from whatsapp_manager.core.summary_crew import SummaryCrew
+    from whatsapp_manager.core.send_sandeco import SendSandeco
 
 # Load environment variables / Carrega variáveis de ambiente
 env_path = os.path.join(PROJECT_ROOT, '.env')

@@ -10,6 +10,22 @@ import streamlit as st
 from dotenv import load_dotenv
 
 # Local application/library imports
+# Define Project Root assuming this file is in src/whatsapp_manager/ui/pages/
+# Navigate four levels up to reach the project root.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+
+# Add src to Python path for imports
+import sys
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, os.path.join(PROJECT_ROOT, 'src'))
+
+# Import local modules
+from whatsapp_manager.core.group_controller import GroupController
+from whatsapp_manager.utils.groups_util import GroupUtils
+from whatsapp_manager.utils.task_scheduler import TaskScheduled
+from whatsapp_manager.core.send_sandeco import SendSandeco
+
+# --- Light Theme CSS ---
 # Define Project Root assuming this file is src/whatsapp_manager/ui/pages/2_Portuguese.py
 # Navigate four levels up to reach the project root.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
@@ -56,6 +72,25 @@ def initialize_components():
         
         if api_status["available"]:
             st.success(f"✅ **API Evolution conectada** (⚡ {api_status['response_time_ms']}ms)")
+            
+            # Check WhatsApp connection status
+            whatsapp_status = control.check_whatsapp_connection()
+            if whatsapp_status.get("connected", False):
+                st.success(f"📱 **WhatsApp conectado**: {whatsapp_status['message']}")
+            else:
+                level = whatsapp_status.get("level", "warning")
+                if level == "error":
+                    st.error(f"📱 **WhatsApp não conectado**: {whatsapp_status['message']}")
+                else:
+                    st.warning(f"📱 **WhatsApp não conectado**: {whatsapp_status['message']}")
+                
+                if whatsapp_status.get("action"):
+                    st.info(f"💡 **Ação necessária**: {whatsapp_status['action']}")
+                
+                manager_url = whatsapp_status.get("manager_url")
+                if manager_url:
+                    st.markdown(f"🔗 **[Abrir Manager da API Evolution]({manager_url})** para conectar o WhatsApp")
+            
             try:
                 groups = control.fetch_groups()
                 mode = "online"

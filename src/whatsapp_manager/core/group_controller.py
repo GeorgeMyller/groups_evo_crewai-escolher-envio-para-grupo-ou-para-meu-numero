@@ -72,7 +72,7 @@ class GroupController:
         load_dotenv(env_path, override=True)
 
         # API Configuration / Configuração da API
-        self.base_url = os.getenv("EVO_BASE_URL", 'http://localhost:8081')
+        self.base_url = os.getenv("EVO_BASE_URL")
         self.api_token = os.getenv("EVO_API_TOKEN")
         self.instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.instance_token = os.getenv("EVO_INSTANCE_TOKEN")
@@ -258,9 +258,18 @@ class GroupController:
         # Teste inicial de conectividade
         if not self._test_api_connection():
             self.logger.warning("API não está respondendo. Tentando URL local como fallback...")
-            self.base_url = 'http://localhost:8081'
+            self.base_url = os.getenv("EVO_BASE_URL")
             assert self.api_token is not None, "API token cannot be None after URL reset"
             self.client = CustomEvolutionClient(base_url=self.base_url, api_token=self.api_token, timeout=self.api_timeout)
+
+        # Verificar conexão WhatsApp antes de tentar buscar grupos
+        whatsapp_status = self.check_whatsapp_connection()
+        if not whatsapp_status.get("connected", False):
+            error_msg = f"WhatsApp não conectado: {whatsapp_status['message']}"
+            if whatsapp_status.get("action"):
+                error_msg += f" - {whatsapp_status['action']}"
+            self.logger.warning("📱 %s", error_msg)
+            raise Exception(error_msg)
 
         max_retries = 3
         base_delay = 15 # seconds
@@ -826,3 +835,89 @@ class GroupController:
             self.logger.error(f"Unexpected error while fetching or processing messages for group {group_id}: {e}", exc_info=True)
 
         return msgs_filtradas
+
+    def check_whatsapp_connection(self):
+        """
+        PT-BR:
+        Verifica o status da conexão WhatsApp da instância.
+        
+        Retorna:
+            dict: Status da conexão, estado e mensagens de orientação
+            
+        EN:
+        Checks the WhatsApp connection status of the instance.
+        
+        Returns:
+            dict: Connection status, state and guidance messages
+        """
+        try:
+            url = f"{self.base_url}/instance/connectionState/{self.instance_id}"
+            headers = {"Content-Type": "application/json", "apikey": self.api_token}
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                instance_info = data.get("instance", {})
+                state = instance_info.get("state", "unknown")
+                
+                # Mapear estados para mensagens úteis
+                status_map = {
+                    "open": {
+                        "connected": True,
+                        "message": "WhatsApp conectado e funcionando",
+                        "action": None,
+                        "level": "success"
+                    },
+                    "connecting": {
+                        "connected": False,
+                        "message": "WhatsApp tentando conectar - QR code pode ser necessário",
+                        "action": f"Acesse {self.base_url}/manager para escanear QR code",
+                        "level": "warning"
+                    },
+                    "close": {
+                        "connected": False,
+                        "message": "WhatsApp desconectado",
+                        "action": f"Acesse {self.base_url}/manager para conectar",
+                        "level": "error"
+                    },
+                    "unknown": {
+                        "connected": False,
+                        "message": f"Estado desconhecido: {state}",
+                        "action": f"Verifique {self.base_url}/manager",
+                        "level": "warning"
+                    }
+                }
+                
+                result = status_map.get(state, status_map["unknown"])
+                result["state"] = state
+                result["instance_name"] = self.instance_id
+                result["manager_url"] = f"{self.base_url}/manager"
+                
+                return result
+                
+            else:
+                return {
+                    "connected": False,
+                    "state": "error",
+                    "message": f"Erro ao verificar status: {response.status_code}",
+                    "action": "Verifique se a API Evolution está funcionando",
+                    "level": "error"
+                }
+                
+        except requests.exceptions.Timeout:
+            return {
+                "connected": False,
+                "state": "timeout",
+                "message": "Timeout ao verificar conexão WhatsApp",
+                "action": "Verifique conectividade com a API Evolution",
+                "level": "error"
+            }
+        except Exception as e:
+            return {
+                "connected": False,
+                "state": "error",
+                "message": f"Erro ao verificar conexão: {str(e)}",
+                "action": "Verifique configurações da API",
+                "level": "error"
+            }

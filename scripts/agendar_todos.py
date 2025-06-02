@@ -18,7 +18,12 @@ args = parser.parse_args()
 
 # Corrected paths relative to PROJECT_ROOT
 summary_script_path = os.path.join(PROJECT_ROOT, "src", "whatsapp_manager", "core", "summary.py")
-group_info_csv_path = os.path.join(PROJECT_ROOT, "data", "group_info.csv")
+group_info_csv_path = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
+
+# Try data directory first, then root
+group_info_csv_path = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
+if not os.path.exists(group_info_csv_path):
+    group_info_csv_path = os.path.join(PROJECT_ROOT, "group_summary.csv")
 
 if not os.path.exists(group_info_csv_path):
     print(f"Erro: Arquivo group_info.csv não encontrado em {group_info_csv_path}")

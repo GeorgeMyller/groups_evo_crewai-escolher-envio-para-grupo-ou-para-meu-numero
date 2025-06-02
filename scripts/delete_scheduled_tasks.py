@@ -26,7 +26,10 @@ from whatsapp_manager.core.group_controller import GroupController
 from whatsapp_manager.utils.task_scheduler import TaskScheduled
 
 # Define path for group_summary.csv
+# Try data directory first, then root
 GROUP_SUMMARY_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
+if not os.path.exists(GROUP_SUMMARY_CSV_PATH):
+    GROUP_SUMMARY_CSV_PATH = os.path.join(PROJECT_ROOT, "group_summary.csv")
 
 
 def list_groups():
