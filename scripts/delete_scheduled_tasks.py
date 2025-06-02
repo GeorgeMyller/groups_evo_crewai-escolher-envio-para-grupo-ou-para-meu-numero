@@ -10,10 +10,23 @@ This module provides functionality to list and remove scheduled tasks from the s
 Allows viewing and managing groups through a command-line interface.
 """
 
-import pandas as pd
-from group_controller import GroupController
-from task_scheduler import TaskScheduled
+import os
 import sys
+
+# Third-party library imports
+import pandas as pd
+
+# Determine project root relative to this script file
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+from whatsapp_manager.core.group_controller import GroupController
+from whatsapp_manager.utils.task_scheduler import TaskScheduled
+
+# Define path for group_summary.csv
+GROUP_SUMMARY_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
 
 
 def list_groups():
@@ -30,7 +43,12 @@ def list_groups():
     Returns:
         DataFrame: Contains scheduled groups information from the CSV file.
     """
-    df = pd.read_csv("group_summary.csv")
+    try:
+        df = pd.read_csv(GROUP_SUMMARY_CSV_PATH)
+    except FileNotFoundError:
+        print(f"Arquivo {GROUP_SUMMARY_CSV_PATH} não encontrado.")
+        return pd.DataFrame() # Return empty DataFrame if file not found
+
     control = GroupController()
     groups = control.fetch_groups()
     group_dict = {group.group_id: group.name for group in groups}
@@ -65,13 +83,17 @@ def delete_scheduled_group(group_id):
         bool: True if removal was successful, False otherwise
     """
     try:
-        df = pd.read_csv("group_summary.csv")
-        
+        try:
+            df = pd.read_csv(GROUP_SUMMARY_CSV_PATH)
+        except FileNotFoundError:
+            print(f"Arquivo {GROUP_SUMMARY_CSV_PATH} não encontrado.")
+            return False
+
         if group_id not in df['group_id'].values:
             print(f"Grupo não encontrado / Group not found: ID {group_id}")
             return False
         
-        task_name = f"ResumoGrupo_{group_id}"
+        task_name = f"ResumoGrupo_{group_id}" # Assuming Portuguese task name prefix from other files
         try:
             TaskScheduled.delete_task(task_name)
             print(f"Tarefa removida do sistema / Task removed from system: {task_name}")
@@ -79,7 +101,7 @@ def delete_scheduled_group(group_id):
             print(f"Aviso / Warning: Não foi possível remover a tarefa / Could not remove task: {e}")
         
         df = df[df['group_id'] != group_id]
-        df.to_csv("group_summary.csv", index=False)
+        df.to_csv(GROUP_SUMMARY_CSV_PATH, index=False)
         print("Grupo removido do arquivo de configuração / Group removed from configuration file")
         
         return True

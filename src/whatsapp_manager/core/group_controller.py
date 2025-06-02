@@ -12,23 +12,32 @@ and automatic summary settings. Provides functionality to fetch, filter,
 and update group information.
 """
 
-import sys
-import os
 import json
-from dotenv import load_dotenv
+import logging
+import os
+import sys # Keep sys for other potential uses, though path append is removed.
+import time
 from datetime import datetime
-from evolutionapi.client import EvolutionClient
-from evolutionapi.exceptions import EvolutionAuthenticationError, EvolutionAPIError
-from group import Group
-import pandas as pd
-from message_sandeco import MessageSandeco
-from task_scheduler import TaskScheduled
-import logging # Added
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Third-party library imports
+from dotenv import load_dotenv
+import pandas as pd
+from evolutionapi.client import EvolutionClient
+from evolutionapi.exceptions import EvolutionAuthenticationError
+from evolutionapi.exceptions import EvolutionAPIError
+
+# Local application/library imports
+from .group import Group
+from .message_sandeco import MessageSandeco
+from whatsapp_manager.utils.task_scheduler import TaskScheduled
+
+
+# Define Project Root assuming this file is src/whatsapp_manager/core/group_controller.py
+# Navigate three levels up to reach the project root from core.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 class GroupController:
-    logger = logging.getLogger(__name__) # Added logger
+    logger = logging.getLogger(__name__)
 
     def __init__(self):
         """
@@ -41,26 +50,25 @@ class GroupController:
         Sets up Evolution API connection and local file paths.
         """
         # Environment setup / Configuração do ambiente
-        env_path = os.path.join(os.path.dirname(__file__), '.env')
+        env_path = os.path.join(PROJECT_ROOT, '.env') # Use PROJECT_ROOT
         load_dotenv(env_path, override=True)
-        
+
         # API Configuration / Configuração da API
         self.base_url = os.getenv("EVO_BASE_URL", 'http://localhost:8081')
         self.api_token = os.getenv("EVO_API_TOKEN")
         self.instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.instance_token = os.getenv("EVO_INSTANCE_TOKEN")
-        
-        # File paths / Caminhos dos arquivos
-        paths_this = os.path.dirname(__file__)
-        self.csv_file = os.path.join(paths_this, "group_summary.csv")
-        self.cache_file = os.path.join(paths_this, "groups_cache.json")
-        
+
+        # File paths / Caminhos dos arquivos, now relative to PROJECT_ROOT/data
+        self.csv_file = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
+        self.cache_file = os.path.join(PROJECT_ROOT, "data", "groups_cache.json")
+
         if not all([self.api_token, self.instance_id, self.instance_token]):
             raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados. / API_TOKEN, INSTANCE_NAME or INSTANCE_TOKEN not configured.")
         # Garantir non-null types para o type checker
         assert self.api_token is not None and self.instance_id is not None and self.instance_token is not None
 
-        print(f"Inicializando EvolutionClient com URL / Initializing EvolutionClient with URL: {self.base_url}")
+        self.logger.info("Inicializando EvolutionClient com URL: %s", self.base_url)
         self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
         self.groups = []
 
@@ -80,11 +88,14 @@ class GroupController:
             with open(self.cache_file, 'r') as f:
                 return json.load(f)
         except json.decoder.JSONDecodeError as e:
-            print(f"Cache com formato inválido. Removendo o arquivo: {e}")
-            os.remove(self.cache_file)
+            self.logger.warning("Cache com formato inválido. Removendo o arquivo: %s", e)
+            try: # Attempt to remove corrupted cache file
+                os.remove(self.cache_file)
+            except OSError as oe:
+                self.logger.error("Erro ao remover arquivo de cache corrompido %s: %s", self.cache_file, oe, exc_info=True)
             return None
         except Exception as e:
-            print(f"Erro ao carregar cache: {str(e)}")
+            self.logger.error("Erro ao carregar cache: %s", e, exc_info=True)
             return None
 
     def _save_cache(self, groups_data):
@@ -106,7 +117,7 @@ class GroupController:
         try:
             # Verifica se groups_data é do tipo serializável (list ou dict), senão ajusta
             if not isinstance(groups_data, (list, dict)):
-                print("groups_data não é serializável. Ajustando para lista vazia.")
+                self.logger.warning("groups_data não é serializável. Ajustando para lista vazia.")
                 groups_data = []
             cache_data = {
                 'timestamp': datetime.now().isoformat(),
@@ -115,7 +126,7 @@ class GroupController:
             with open(self.cache_file, 'w') as f:
                 json.dump(cache_data, f)
         except Exception as e:
-            print(f"Erro ao salvar cache: {str(e)}")
+            self.logger.error("Erro ao salvar cache: %s", e, exc_info=True)
 
     def _fetch_from_api(self):
         """
@@ -133,52 +144,129 @@ class GroupController:
         Raises:
             Exception: If unable to fetch after several attempts
         """
-        import time
-        from evolutionapi.exceptions import EvolutionAPIError
-        
         # Verifica se as configurações ainda estão válidas
-        if '<' in self.base_url or '>' in self.base_url:
-            print("URL inválida detectada, redefinindo para padrão...")
-            self.base_url = 'http://localhost:8081'
-            assert self.api_token is not None, "API token cannot be None"
+        if '<' in self.base_url or '>' in self.base_url: # Basic check, consider more robust URL validation
+            self.logger.warning("URL inválida detectada, redefinindo para padrão: %s", self.base_url)
+            self.base_url = 'http://localhost:8081' # Consider making default URL a constant
+            assert self.api_token is not None, "API token cannot be None after URL reset" # Should already be asserted in __init__
             self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
-            
+
         max_retries = 3
-        base_delay = 15
+        base_delay = 15 # seconds
         for attempt in range(max_retries):
             try:
-                print(f"Tentativa {attempt + 1}: Fazendo requisição para {self.base_url}")
+                self.logger.info("Tentativa %s: Fazendo requisição para %s", attempt + 1, self.base_url)
                 # Verify that instance_id and instance_token are not None
                 assert self.instance_id is not None, "instance_id cannot be None"
                 assert self.instance_token is not None, "instance_token cannot be None"
-                return self.client.group.fetch_all_groups(
+
+                groups_raw_data = self.client.group.fetch_all_groups(
                     instance_id=self.instance_id,
                     instance_token=self.instance_token,
-                    get_participants=False
+                    get_participants=False # Consider making this configurable
                 )
+                return groups_raw_data
+
             except EvolutionAuthenticationError as e:
-                print(f"Erro de autenticação: {str(e)}")
-                print("Verifique suas credenciais no arquivo .env:")
-                print(f"- EVO_API_TOKEN: {'✓' if self.api_token else '✗'}")
-                print(f"- EVO_INSTANCE_NAME: {'✓' if self.instance_id else '✗'}")
-                print(f"- EVO_INSTANCE_TOKEN: {'✓' if self.instance_token else '✗'}")
-                print(f"- EVO_BASE_URL: {self.base_url}")
-                raise e
+                self.logger.error("Erro de autenticação: %s", e)
+                self.logger.error("Verifique suas credenciais no arquivo .env:")
+                self.logger.error("- EVO_API_TOKEN: %s", '✓' if self.api_token else '✗')
+                self.logger.error("- EVO_INSTANCE_NAME: %s", '✓' if self.instance_id else '✗')
+                self.logger.error("- EVO_INSTANCE_TOKEN: %s", '✓' if self.instance_token else '✗')
+                self.logger.error("- EVO_BASE_URL: %s", self.base_url)
+                raise  # Re-raise the exception after logging
             except EvolutionAPIError as e:
-                if 'rate-overlimit' in str(e) and attempt < max_retries - 1:
+                if 'rate-overlimit' in str(e).lower() and attempt < max_retries - 1: # Check lowercased error string
                     wait_time = base_delay * (2 ** attempt)
-                    print(f"Rate limit atingido. Aguardando {wait_time} segundos...")
+                    self.logger.warning("Rate limit atingido. Aguardando %s segundos...", wait_time)
                     time.sleep(wait_time)
                 else:
-                    print(f"Erro na API: {str(e)}")
-                    raise
-        raise Exception("Não foi possível buscar os grupos após várias tentativas")
+                    self.logger.error("Erro na API: %s", e, exc_info=True)
+                    raise # Re-raise the exception
+            except Exception as e: # Catch any other unexpected errors during API call
+                self.logger.error("Erro inesperado durante _fetch_from_api: %s", e, exc_info=True)
+                raise # Re-raise
+
+        self.logger.error("Não foi possível buscar os grupos após %s tentativas", max_retries)
+        raise Exception(f"Não foi possível buscar os grupos após {max_retries} tentativas")
+
+
+    def _create_group_object(self, group_item_data: dict, summary_df: pd.DataFrame) -> Group | None:
+        """
+        Helper method to create a Group object from raw data and summary information.
+        """
+        if not isinstance(group_item_data, dict):
+            self.logger.warning("group_item_data não é um dicionário. Ignorando: %s", group_item_data)
+            return None
+
+        group_id = group_item_data.get("id")
+        if not group_id:
+            self.logger.warning("Item de grupo sem 'id'. Ignorando: %s", group_item_data)
+            return None
+
+        group_subject = group_item_data.get("subject")
+        if not group_subject:
+            self.logger.warning("Item de grupo sem 'subject' (nome). Ignorando ID: %s", group_id)
+            return None
+
+        # Use .loc for safer access and ensure 'group_id' column exists or handle potential KeyError
+        try:
+            resumo_df_slice = summary_df.loc[summary_df["group_id"] == group_id]
+        except KeyError: # If 'group_id' column doesn't exist in summary_df
+             self.logger.warning("Coluna 'group_id' não encontrada no DataFrame de resumo. Usando padrões para o grupo %s.", group_id)
+             resumo_df_slice = pd.DataFrame() # Empty DataFrame to use defaults
+
+        horario = "22:00"
+        enabled = False
+        is_links = False
+        is_names = False
+        send_to_group = True
+        send_to_personal = False
+        min_messages_summary = 50 # Default value from Group class or a constant
+
+        if not resumo_df_slice.empty:
+            resumo_dict = resumo_df_slice.iloc[0].to_dict()
+            horario = resumo_dict.get("horario", horario)
+            enabled = resumo_dict.get("enabled", enabled)
+            is_links = resumo_dict.get("is_links", is_links)
+            is_names = resumo_dict.get("is_names", is_names)
+            send_to_group = resumo_dict.get("send_to_group", send_to_group)
+            send_to_personal = resumo_dict.get("send_to_personal", send_to_personal)
+            min_messages_summary = resumo_dict.get("min_messages_summary", min_messages_summary)
+
+
+        try:
+            group_obj = Group(
+                group_id=group_id,
+                name=group_subject, # Use extracted subject
+                subject_owner=group_item_data.get("subjectOwner", "remoteJid"), # Provide default if missing
+                subject_time=group_item_data.get("subjectTime", 0), # Provide default
+                picture_url=group_item_data.get("pictureUrl"),
+                size=group_item_data.get("size", 0), # Provide default
+                creation=group_item_data.get("creation", 0), # Provide default
+                owner=group_item_data.get("owner"),
+                restrict=group_item_data.get("restrict", False), # Provide default
+                announce=group_item_data.get("announce", False), # Provide default
+                is_community=group_item_data.get("isCommunity", False), # Provide default
+                is_community_announce=group_item_data.get("isCommunityAnnounce", False), # Provide default
+                horario=horario,
+                enabled=enabled,
+                is_links=is_links,
+                is_names=is_names,
+                send_to_group=send_to_group,
+                send_to_personal=send_to_personal,
+                min_messages_summary=min_messages_summary
+            )
+            return group_obj
+        except Exception as e:
+            self.logger.error("Erro ao criar objeto Group para ID %s: %s", group_id, e, exc_info=True)
+            return None
 
     def fetch_groups(self, force_refresh=False):
         """
         PT-BR:
         Obtém lista de grupos usando cache ou API.
-        
+
         Parâmetros:
             force_refresh: Força atualização da API ignorando cache
 
@@ -187,94 +275,71 @@ class GroupController:
 
         EN:
         Gets group list using cache or API.
-        
+
         Parameters:
             force_refresh: Forces API update ignoring cache
 
         Returns:
             List[Group]: List of Group objects
         """
-        summary_data = self.load_summary_info()
-        groups_data = None
+        summary_data = self.load_summary_info() # Load summary data once
+        groups_api_data = None # Renamed to avoid confusion with self.groups (list of Group objects)
+
         if not force_refresh:
             cache_data = self._load_cache()
-            if cache_data and "groups" in cache_data:
-                print("Usando dados do cache...")
-                groups_data = cache_data["groups"]
+            if cache_data and "groups" in cache_data: # Ensure 'groups' key exists
+                self.logger.info("Usando dados do cache...")
+                groups_api_data = cache_data["groups"]
             else:
-                print("Cache não encontrado. Buscando da API...")
-                groups_data = self._fetch_from_api()
-                self._save_cache(groups_data)
+                self.logger.info("Cache não encontrado ou inválido. Buscando da API...")
+                groups_api_data = self._fetch_from_api()
+                if groups_api_data is not None: # Save only if API call was successful
+                    self._save_cache(groups_api_data)
         else:
             try:
-                print("Forçando atualização da API...")
-                groups_data = self._fetch_from_api()
-                self._save_cache(groups_data)
-            except Exception as e:
-                if "rate-overlimit" in str(e):
-                    print("Rate limit atingido. Verificando cache para fallback...")
-                    cache_data = self._load_cache()
-                    if cache_data and "groups" in cache_data:
-                        groups_data = cache_data["groups"]
-                    else:
-                        raise e
+                self.logger.info("Forçando atualização da API...")
+                groups_api_data = self._fetch_from_api()
+                if groups_api_data is not None:
+                    self._save_cache(groups_api_data)
+            except Exception as e: # Catching generic Exception from _fetch_from_api
+                self.logger.error("Erro ao forçar atualização da API: %s. Tentando fallback para cache.", e, exc_info=True)
+                # Fallback to cache if forced refresh fails
+                cache_data = self._load_cache()
+                if cache_data and "groups" in cache_data:
+                    self.logger.warning("Rate limit atingido. Verificando cache para fallback...")
+                    groups_api_data = cache_data["groups"]
                 else:
-                    raise e
-        self.groups = []
-        for group in groups_data:
-            group_id = group["id"]
-            resumo = summary_data[summary_data["group_id"] == group_id]
-            if not resumo.empty:
-                resumo = resumo.iloc[0].to_dict()
-                horario = resumo.get("horario", "22:00")
-                enabled = resumo.get("enabled", False)
-                is_links = resumo.get("is_links", False)
-                is_names = resumo.get("is_names", False)
-                send_to_group = resumo.get("send_to_group", True)
-                send_to_personal = resumo.get("send_to_personal", False)
-            else:
-                horario = "22:00"
-                enabled = False
-                is_links = False
-                is_names = False
-                send_to_group = True
-                send_to_personal = False
+                    self.logger.error("Fallback para cache falhou. Nenhum dado de grupo disponível.")
+                    # Depending on desired behavior, could raise e here or return empty list
+                    self.groups = []
+                    return self.groups # Return empty list if API and cache fail
 
-            self.groups.append(
-                Group(
-                    group_id=group_id,
-                    name=group["subject"],
-                    subject_owner=group.get("subjectOwner", "remoteJid"),
-                    subject_time=group["subjectTime"],
-                    picture_url=group.get("pictureUrl", None),
-                    size=group["size"],
-                    creation=group["creation"],
-                    owner=group.get("owner", None),
-                    restrict=group["restrict"],
-                    announce=group["announce"],
-                    is_community=group["isCommunity"],
-                    is_community_announce=group["isCommunityAnnounce"],
-                    horario=horario,
-                    enabled=enabled,
-                    is_links=is_links,
-                    is_names=is_names,
-                    send_to_group=send_to_group,
-                    send_to_personal=send_to_personal
-                )
-            )
+        self.groups = [] # Reset current groups list
+        if groups_api_data:
+            if not isinstance(groups_api_data, list): # Ensure API data is a list
+                self.logger.error("Dados da API não são uma lista: %s", type(groups_api_data))
+                return self.groups # Return empty list
+
+            for group_item_data in groups_api_data:
+                group_obj = self._create_group_object(group_item_data, summary_data)
+                if group_obj:
+                    self.groups.append(group_obj)
+        else:
+            self.logger.info("Nenhum dado de grupo recebido da API ou cache.")
+
         return self.groups
 
     def load_summary_info(self):
         """
         PT-BR:
         Carrega ou cria DataFrame com informações de resumo dos grupos.
-        
+
         Retorna:
             DataFrame: Contém configurações de resumo de todos os grupos
 
         EN:
         Loads or creates DataFrame with group summary information.
-        
+
         Returns:
             DataFrame: Contains summary settings for all groups
         """
@@ -282,16 +347,16 @@ class GroupController:
             return pd.read_csv(self.csv_file)
         except FileNotFoundError:
             return pd.DataFrame(columns=[
-                "group_id", "dias", "horario", "enabled", 
-                "is_links", "is_names", "send_to_group", 
-                "send_to_personal", "min_messages_summary" # Adicionar nova coluna
+                "group_id", "dias", "horario", "enabled",
+                "is_links", "is_names", "send_to_group",
+                "send_to_personal", "min_messages_summary"
             ])
 
     def load_data_by_group(self, group_id):
         """
         PT-BR:
         Carrega configurações de resumo para um grupo específico.
-        
+
         Parâmetros:
             group_id: Identificador do grupo
 
@@ -300,7 +365,7 @@ class GroupController:
 
         EN:
         Loads summary settings for a specific group.
-        
+
         Parameters:
             group_id: Group identifier
 
@@ -309,16 +374,21 @@ class GroupController:
         """
         try:
             df = self.load_summary_info()
-            resumo = df[df["group_id"] == group_id]
-            return resumo.iloc[0].to_dict() if not resumo.empty else False
-        except Exception:
+            # Use .loc for safer access and ensure 'group_id' column exists or handle potential KeyError
+            resumo_df_slice = df.loc[df["group_id"] == group_id]
+            return resumo_df_slice.iloc[0].to_dict() if not resumo_df_slice.empty else False
+        except KeyError: # Handle case where 'group_id' column might be missing
+            self.logger.warning("Coluna 'group_id' não encontrada no DataFrame de resumo ao carregar para grupo %s.", group_id)
+            return False
+        except Exception as e:
+            self.logger.error(f"Erro ao carregar dados de resumo para o grupo {group_id}: {e}", exc_info=True)
             return False
 
-    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, send_to_group=True, send_to_personal=False, start_date=None, start_time=None, end_date=None, end_time=None, min_messages_summary=50): # Adicionar novo parâmetro com valor default
+    def update_summary(self, group_id, horario, enabled, is_links, is_names, script, send_to_group=True, send_to_personal=False, start_date=None, start_time=None, end_date=None, end_time=None, min_messages_summary=50):
         """
         PT-BR:
         Atualiza configurações de resumo de um grupo no CSV.
-        
+
         Parâmetros:
             group_id: ID do grupo
             horario: Horário de execução
@@ -339,7 +409,7 @@ class GroupController:
 
         EN:
         Updates group summary settings in CSV.
-        
+
         Parameters:
             group_id: Group ID
             horario: Execution time
@@ -361,14 +431,12 @@ class GroupController:
         try:
             df = pd.read_csv(self.csv_file)
         except FileNotFoundError:
-            df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script", 
+            df = pd.DataFrame(columns=["group_id", "horario", "enabled", "is_links", "is_names", "script",
                                      "send_to_group", "send_to_personal",
-                                     "start_date", "start_time", "end_date", "end_time", "min_messages_summary"]) # Adicionar nova coluna
-        
-        # Remove qualquer entrada existente para o grupo
+                                     "start_date", "start_time", "end_date", "end_time", "min_messages_summary"])
+
         df = df[df['group_id'] != group_id]
-        
-        # Adiciona a nova configuração
+
         nova_config = {
             "group_id": group_id,
             "horario": horario,
@@ -382,25 +450,25 @@ class GroupController:
             "start_time": start_time if start_time else None,
             "end_date": end_date if end_date else None,
             "end_time": end_time if end_time else None,
-            "min_messages_summary": min_messages_summary # Adicionar novo campo
+            "min_messages_summary": min_messages_summary
         }
-        
+
         df = pd.concat([df, pd.DataFrame([nova_config])], ignore_index=True)
         df.to_csv(self.csv_file, index=False)
-        
+
         return True
 
     def get_groups(self):
         """
         PT-BR:
         Retorna lista de grupos processada.
-        
+
         Retorna:
             List[Group]: Lista atual de objetos Group
 
         EN:
         Returns processed group list.
-        
+
         Returns:
             List[Group]: Current list of Group objects
         """
@@ -410,7 +478,7 @@ class GroupController:
         """
         PT-BR:
         Localiza um grupo pelo seu ID.
-        
+
         Parâmetros:
             group_id: ID do grupo a ser encontrado
 
@@ -419,25 +487,28 @@ class GroupController:
 
         EN:
         Finds a group by its ID.
-        
+
         Parameters:
             group_id: Group ID to find
 
         Returns:
             Group/None: Group object or None if not found
+
+        Note: This method will call `self.fetch_groups()` if `self.groups` is currently empty.
+        This ensures that group data is loaded but may involve an API call if the cache is empty or stale.
         """
         if not self.groups:
-            self.groups = self.fetch_groups()
-        for group in self.groups:
-            if group.group_id == group_id:
-                return group
+            self.fetch_groups() # This might call fetch_groups if groups is empty
+        for group_instance in self.groups: # Renamed to avoid conflict
+            if group_instance.group_id == group_id:
+                return group_instance
         return None
 
     def filter_groups_by_owner(self, owner):
         """
         PT-BR:
         Filtra grupos por proprietário.
-        
+
         Parâmetros:
             owner: ID do proprietário
 
@@ -446,20 +517,20 @@ class GroupController:
 
         EN:
         Filters groups by owner.
-        
+
         Parameters:
             owner: Owner ID
 
         Returns:
             List[Group]: List of owner's groups
         """
-        return [group for group in self.groups if group.owner == owner]
+        return [group_instance for group_instance in self.groups if group_instance.owner == owner] # Renamed to avoid conflict
 
     def get_messages(self, group_id, start_date, end_date):
         """
         PT-BR:
         Obtém e filtra mensagens de um grupo em um período.
-        
+
         Parâmetros:
             group_id: ID do grupo
             start_date: Data inicial (formato: YYYY-MM-DD HH:MM:SS)
@@ -470,7 +541,7 @@ class GroupController:
 
         EN:
         Gets and filters group messages within a period.
-        
+
         Parameters:
             group_id: Group ID
             start_date: Start date (format: YYYY-MM-DD HH:MM:SS)
@@ -487,10 +558,10 @@ class GroupController:
 
         timestamp_start_iso = to_iso8601(start_date)
         timestamp_end_iso = to_iso8601(end_date)
-        
+
         assert self.instance_id is not None, "instance_id cannot be None"
         assert self.instance_token is not None, "instance_token cannot be None"
-        
+
         group_mensagens_raw = None
         msgs_processed = []
         msgs_filtradas = []
@@ -504,7 +575,7 @@ class GroupController:
                 timestamp_start=timestamp_start_iso,
                 timestamp_end=timestamp_end_iso,
                 page=1,
-                offset=1000 # Consider making offset configurable or handling pagination if needed
+                offset=1000
             )
             self.logger.debug(f"Raw API response for group {group_id}: {group_mensagens_raw}")
 

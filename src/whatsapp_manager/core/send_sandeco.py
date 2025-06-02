@@ -12,15 +12,23 @@ using the Evolution API. Supports sending texts, PDFs, audio, images, videos and
 Provides an abstraction layer to facilitate API integration.
 """
 
+# Standard library imports
+import logging
 import os
 import time
-import logging
+
+# Third-party library imports
 from dotenv import load_dotenv
 from evolutionapi.client import EvolutionClient
-from evolutionapi.models.message import TextMessage, MediaMessage
+from evolutionapi.models.message import MediaMessage
+from evolutionapi.models.message import TextMessage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Define Project Root assuming this file is src/whatsapp_manager/core/send_sandeco.py
+# Navigate three levels up to reach the project root from core.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 class SendSandeco:
     """
@@ -35,7 +43,8 @@ class SendSandeco:
     
     def __init__(self) -> None:
         # Environment setup and client initialization / Configuração do ambiente e inicialização do cliente
-        load_dotenv()
+        env_path = os.path.join(PROJECT_ROOT, '.env')
+        load_dotenv(env_path, override=True) # Explicitly load .env from project root
         self.evo_api_token = os.getenv("EVO_API_TOKEN")
         self.evo_instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.evo_instance_token = os.getenv("EVO_INSTANCE_TOKEN")
@@ -91,7 +100,7 @@ class SendSandeco:
                 formatted_number = ''.join(filter(str.isdigit, formatted_number))
                 
                 # Garante que começa com o código do país
-                if not formatted_number.startswith('351'):
+                if not formatted_number.startswith('351'): # Assuming 351 is the default/expected country code
                     formatted_number = '351' + formatted_number
                 
                 # Adiciona o sufixo whatsapp
@@ -124,11 +133,11 @@ class SendSandeco:
                 return response
             except Exception as api_error:
                 logging.error(f"Erro na API Evolution: {str(api_error)}")
-                logging.error(f"Detalhes da requisição: Instance ID: {self.evo_instance_id}, Token: {'*' * len(self.evo_instance_token)}")
+                logging.error(f"Detalhes da requisição: Instance ID: {self.evo_instance_id}, Token: {'*' * len(self.evo_instance_token if self.evo_instance_token else '')}")
                 raise api_error
             
         except Exception as e:
-            logging.error(f"Erro ao enviar mensagem: Número: {formatted_number}, Erro: {str(e)}")
+            logging.error(f"Erro ao enviar mensagem: Número: {formatted_number if 'formatted_number' in locals() else number}, Erro: {str(e)}")
             raise Exception(f"Erro ao enviar mensagem: {str(e)}")
 
     def PDF(self, number, pdf_file, caption=""):

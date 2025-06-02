@@ -1,10 +1,13 @@
-import streamlit as st
-import pandas as pd
-import re
-import plotly.express as px
-from datetime import datetime, timedelta
-import os
 import calendar
+from datetime import datetime
+from datetime import timedelta
+import os
+import re
+
+# Third-party library imports
+import pandas as pd
+import plotly.express as px
+import streamlit as st
 
 # Set page configuration with customized theme
 st.set_page_config(
@@ -55,7 +58,9 @@ st.markdown("""
 # Display application header with WhatsApp-style green color
 st.markdown('<h1 class="main-header">📊 WhatsApp Group Summary Analytics Dashboard</h1>', unsafe_allow_html=True)
 
-LOG_FILE_PATH = os.path.join(os.path.dirname(__file__), '..', 'log_summary.txt')
+# Define Project Root assuming this file is src/whatsapp_manager/ui/pages/4_Dashboard.py
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "data", "log_summary.txt")
 
 def parse_log_entries(log_content):
     """

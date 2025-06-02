@@ -1,5 +1,6 @@
+# Standard library imports
 import base64
-import logging # Added
+import logging
 
 """
 Processador de Mensagens do WhatsApp / WhatsApp Message Processor
@@ -39,22 +40,28 @@ class MessageSandeco:
         Parameters:
             raw_data: Raw WhatsApp message data
         """
-        if "data" not in raw_data:
-            enveloped_data = {
-                "event": None,
-                "instance": None,
-                "destination": None,
-                "date_time": None,
-                "server_url": None,
-                "apikey": None,
-                "data": raw_data
-            }
+        # Determine if raw_data is already a fully formed message or just the payload
+        if isinstance(raw_data, dict) and \
+           "data" in raw_data and \
+           isinstance(raw_data.get("data"), dict) and \
+           "key" in raw_data.get("data", {}) and \
+           isinstance(raw_data.get("data", {}).get("key"), dict) and \
+           "remoteJid" in raw_data.get("data", {}).get("key", {}):
+            self.data = raw_data
+            self.logger.debug("Initializing MessageSandeco with already enveloped data. Message ID: %s",
+                              self.data.get('data', {}).get('key', {}).get('id', 'N/A'))
         else:
-            enveloped_data = raw_data
+            self.logger.info("Initializing MessageSandeco with raw_data (type: %s), will use default envelope.", type(raw_data))
+            self.data = { # Default envelope
+                "event": None, "instance": None, "destination": None,
+                "date_time": None, "server_url": None, "apikey": None,
+                "data": raw_data # The original input becomes the 'data' part of the envelope
+            }
         
-        self.data = enveloped_data
         self.extract_common_data()
         self.extract_specific_data()
+        self.logger.debug("MessageSandeco object created. Message ID: %s, Type: %s",
+                          getattr(self, 'message_id', 'N/A'), getattr(self, 'message_type', 'N/A'))
     
     def extract_common_data(self):
         """
@@ -74,7 +81,18 @@ class MessageSandeco:
         self.apikey = self.data.get("apikey")
         
         data = self.data.get("data", {})
-        key = data.get("key", {})
+        if not data: # Log if the main 'data' field (payload container) is missing
+            self.logger.warning("Main 'data' field is missing in raw_data for what should be message_id: %s (if available in envelope)", self.data.get('key', {}).get('id', 'N/A_in_envelope'))
+            # Initialize key and message_payload to empty dicts to prevent further errors
+            key = {}
+            self.message_payload = {}
+        else:
+            key = data.get("key", {})
+            self.message_payload = data.get("message", {}) # Centralized message payload
+            if not self.message_payload:
+                 # Attempt to get message_id from key if available, even if message_payload is missing
+                message_id_for_log = key.get("id", "N/A_in_key")
+                self.logger.warning("Message payload ('data.message') is missing or empty for message_id: %s", message_id_for_log)
         
         self.remote_jid = key.get("remoteJid")
         self.message_id = key.get("id")
@@ -142,7 +160,7 @@ class MessageSandeco:
         Extracts text message content.
         Sets text_message attribute with conversation content.
         """
-        self.text_message = self.data["data"]["message"].get("conversation")
+        self.text_message = self.message_payload.get(self.TYPE_TEXT) # TYPE_TEXT is "conversation"
     
     def extract_audio_message(self):
         """
@@ -154,8 +172,8 @@ class MessageSandeco:
         Extracts audio message metadata.
         Includes URL, MIME type, duration, media keys, and other details.
         """
-        audio_data = self.data["data"]["message"]["audioMessage"]
-        self.audio_base64_bytes = self.data["data"]["message"].get("base64")
+        audio_data = self.message_payload.get(self.TYPE_AUDIO, {}) # TYPE_AUDIO is "audioMessage"
+        self.audio_base64_bytes = self.message_payload.get("base64") # From data.message.base64
         self.audio_url = audio_data.get("url")
         self.audio_mimetype = audio_data.get("mimetype")
         self.audio_file_sha256 = audio_data.get("fileSha256")
@@ -178,7 +196,7 @@ class MessageSandeco:
         Extracts image message metadata.
         Includes URL, dimensions, caption, thumbnails, and other details.
         """
-        image_data = self.data["data"]["message"]["imageMessage"]
+        image_data = self.message_payload.get(self.TYPE_IMAGE, {}) # TYPE_IMAGE is "imageMessage"
         self.image_url = image_data.get("url")
         self.image_mimetype = image_data.get("mimetype")
         self.image_caption = image_data.get("caption")
@@ -194,7 +212,7 @@ class MessageSandeco:
         self.image_scans_sidecar = image_data.get("scansSidecar")
         self.image_scan_lengths = image_data.get("scanLengths")
         self.image_mid_quality_file_sha256 = image_data.get("midQualityFileSha256")
-        self.image_base64 = self.data["data"]["message"].get("base64")
+        self.image_base64 = self.message_payload.get("base64") # From data.message.base64
     
     def extract_document_message(self):
         """
@@ -206,7 +224,7 @@ class MessageSandeco:
         Extracts document message metadata.
         Includes URL, filename, MIME type, caption, and other details.
         """
-        document_data = self.data["data"]["message"]["documentMessage"]
+        document_data = self.message_payload.get(self.TYPE_DOCUMENT, {}) # TYPE_DOCUMENT is "documentMessage"
         self.document_url = document_data.get("url")
         self.document_mimetype = document_data.get("mimetype")
         self.document_title = document_data.get("title")
@@ -216,8 +234,8 @@ class MessageSandeco:
         self.document_file_name = document_data.get("fileName")
         self.document_file_enc_sha256 = document_data.get("fileEncSha256")
         self.document_direct_path = document_data.get("directPath")
-        self.document_caption = document_data.get("caption", None)
-        self.document_base64_bytes = self.decode_base64(self.data["data"]["message"].get("base64"))
+        self.document_caption = document_data.get("caption", None) # caption is part of documentMessage itself
+        self.document_base64_bytes = self.decode_base64(self.message_payload.get("base64")) # From data.message.base64
     
     def decode_base64(self, base64_string):
         """
@@ -337,7 +355,7 @@ class MessageSandeco:
             MessageSandeco.logger.warning(f"'records' key not found or is not a list. Received: {type(records)}. Container keys: {list(msgs_container.keys())}. Returning empty list.")
             return []
         
-        if not records: # Corrected typo from 'if not records:' to 'if not msgs_data:' (actually, it should be 'if not records:' here, as records is already extracted)
+        if not records:
             MessageSandeco.logger.info("No message records found in the 'records' list. Returning empty list.")
             return []
 

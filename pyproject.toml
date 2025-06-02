@@ -18,3 +18,13 @@ dependencies = [
     "plotly>=6.0.1",
 ]
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+# backend-path is not strictly necessary if setuptools is in default path
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["whatsapp_manager*"]
+# namespaces = false # Optional: default is true, which is fine for src-layout
+# exclude = [] # Optional: if you had specific sub-packages to exclude

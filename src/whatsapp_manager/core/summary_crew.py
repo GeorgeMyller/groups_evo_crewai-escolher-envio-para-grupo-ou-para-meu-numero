@@ -11,9 +11,20 @@ This class uses the CrewAI library to create intelligent summaries of WhatsApp
 conversations, organizing content into relevant sections and ensuring clear,
 structured presentation.
 """
+import os # For PROJECT_ROOT
 
+# Third-party library imports
 from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent
+from crewai import Task
+from crewai import Crew
+from crewai import Process
+from crewai import LLM
+
+
+# Define Project Root assuming this file is src/whatsapp_manager/core/summary_crew.py
+# Navigate three levels up to reach the project root from core.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 class SummaryCrew:
     def __init__(self):
@@ -26,8 +37,9 @@ class SummaryCrew:
         Initializes the summary generator.
         Sets up the language model and creates the agent crew.
         """
-        load_dotenv()
-        self.llm = "gemini/gemini-2.0-flash"
+        env_path = os.path.join(PROJECT_ROOT, '.env')
+        load_dotenv(env_path, override=True) # Explicitly load .env from project root
+        self.llm = "gemini/gemini-2.0-flash" # This might need to be an environment variable
         self.create_crew()
 
     def create_crew(self):
