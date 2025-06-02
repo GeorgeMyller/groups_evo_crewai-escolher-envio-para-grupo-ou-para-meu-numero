@@ -1,6 +1,20 @@
+import os
+import sys
+
+# Third-party library imports
 import pandas as pd
-from group_controller import GroupController
-from task_scheduler import TaskScheduled
+
+# Determine project root relative to this script file
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
+from whatsapp_manager.core.group_controller import GroupController
+from whatsapp_manager.utils.task_scheduler import TaskScheduled
+
+# Define path for group_summary.csv
+GROUP_SUMMARY_CSV_PATH = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
 
 def list_scheduled_groups():
     """
@@ -13,7 +27,12 @@ def list_scheduled_groups():
     Displays detailed information about each group, including name, ID and settings.
     """
     try:
-        df = pd.read_csv("group_summary.csv")
+        try:
+            df = pd.read_csv(GROUP_SUMMARY_CSV_PATH)
+        except FileNotFoundError:
+            print(f"Arquivo {GROUP_SUMMARY_CSV_PATH} não encontrado.")
+            return # Exit if file not found
+
         enabled_groups = df[df['enabled'] == True]
 
         if enabled_groups.empty:

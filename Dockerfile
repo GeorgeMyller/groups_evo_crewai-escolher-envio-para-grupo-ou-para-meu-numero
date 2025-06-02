@@ -44,4 +44,4 @@ RUN touch /etc/cron.d/tasks_app && \
 EXPOSE 8501
 
 # Run the Streamlit app when the container launches
-CMD ["streamlit", "run", "WhatsApp_Group_Resumer.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+CMD ["streamlit", "run", "src/whatsapp_manager/ui/main_app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]

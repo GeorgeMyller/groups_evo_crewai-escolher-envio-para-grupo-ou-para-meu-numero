@@ -12,19 +12,27 @@ It processes messages from a specific time period and uses CrewAI to generate
 an intelligent summary that is sent back to the group.
 """
 
-import sys
-import os
-import time
 import argparse
-from datetime import datetime, timedelta
+import os
+import sys
+import time
+from datetime import datetime, timedelta # Keep as is, or split if strict one-per-line for all froms
+
+# Third-party library imports
 from dotenv import load_dotenv
-from group_controller import GroupController
-from summary_crew import SummaryCrew
-from send_sandeco import SendSandeco
+
+# Local application/library imports
+from .group_controller import GroupController
+from .summary_crew import SummaryCrew
+from .send_sandeco import SendSandeco
+
+# Define Project Root assuming this file is src/whatsapp_manager/core/summary.py
+# Navigate three levels up to reach the project root from core.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 # Load environment variables / Carrega variáveis de ambiente
-env_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(env_path)
+env_path = os.path.join(PROJECT_ROOT, '.env')
+load_dotenv(env_path, override=True) # Added override=True for consistency
 
 # Get WhatsApp number from environment / Obtém número do WhatsApp do ambiente
 personal_number = os.getenv("WHATSAPP_NUMBER")
@@ -157,10 +165,10 @@ if df and df.get('enabled', False):
             print(f"Erro ao enviar para número pessoal: {str(e)}")
 
     # Success logging / Registro de sucesso
-    log_path = os.path.dirname(__file__)
-    nome_arquivo = os.path.join(log_path, "log_summary.txt")
+    # Ensure log_summary.txt is written to the data directory at the project root
+    log_file_path = os.path.join(PROJECT_ROOT, "data", "log_summary.txt")
 
-    with open(nome_arquivo, "a", encoding="utf-8") as arquivo:
+    with open(log_file_path, "a", encoding="utf-8") as arquivo:
         destinations = []
         if df.get('send_to_group', True):
             destinations.append("grupo")

@@ -10,13 +10,17 @@ This class provides tools for handling group images, date formatting,
 and presenting information in the user interface.
 """
 
-import pandas as pd
+# Standard library imports
 import base64
+from datetime import datetime
+from io import BytesIO
+
+# Third-party library imports
+import pandas as pd
 import requests
 import streamlit as st
 from PIL import Image
-from io import BytesIO
-from datetime import datetime
+
 
 class GroupUtils:
     def resized_image_to_base64(self, image):

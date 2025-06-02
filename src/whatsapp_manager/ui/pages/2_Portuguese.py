@@ -1,9 +1,31 @@
 import os
-import streamlit as st
-from datetime import time, date, datetime
-import time as t
+import time as t # Standard library time aliased
+from datetime import time # datetime.time
+from datetime import date # datetime.date
+from datetime import datetime # datetime.datetime
+
+# Third-party library imports
 import pandas as pd
+import streamlit as st
 from dotenv import load_dotenv
+
+# Local application/library imports
+# Define Project Root assuming this file is src/whatsapp_manager/ui/pages/2_Portuguese.py
+# Navigate four levels up to reach the project root.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+
+# Adjust sys.path if necessary for Streamlit's execution context,
+# though direct imports from whatsapp_manager should work if src is in PYTHONPATH
+# or if Streamlit runs from the project root and picks up src.
+# For robustness, especially if running pages directly or in some deployments:
+import sys
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, os.path.join(PROJECT_ROOT, 'src'))
+
+from whatsapp_manager.core.group_controller import GroupController
+from whatsapp_manager.utils.groups_util import GroupUtils
+from whatsapp_manager.utils.task_scheduler import TaskScheduled
+from whatsapp_manager.core.send_sandeco import SendSandeco
 
 
 # --- Light Theme CSS ---
@@ -12,39 +34,84 @@ st.set_page_config(page_title='WhatsApp Group Resumer - PT', layout='wide')
 # This page is the Portuguese version of the app
 
 # Load environment variables
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-st.write(f"Carregando .env de: {env_path}")
-load_dotenv(env_path)
+env_path = os.path.join(PROJECT_ROOT, '.env')
+# st.write(f"Carregando .env de: {env_path}") # Optional: for debugging
+load_dotenv(env_path, override=True)
 
-from group_controller import GroupController
-from groups_util import GroupUtils
-from task_scheduler import TaskScheduled
-from send_sandeco import SendSandeco
 
 st.markdown("""
    
 """, unsafe_allow_html=True)
 
 # Initialize core components
-try:
-    control = GroupController()
-    groups = control.fetch_groups()
-    ut = GroupUtils()
-    group_map, options = ut.map(groups)
-    sender = SendSandeco()
-    initialization_error = None
-except Exception as e:
-    control = None
-    groups = []
-    ut = None
-    group_map = {}
-    options = []
-    sender = None
-    initialization_error = str(e)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def initialize_components():
+    """Initialize GroupController with proper error handling and fallback modes."""
+    try:
+        # Initialize with shorter initial timeout
+        control = GroupController(api_timeout=120)
+        
+        # Check API availability first
+        api_status = control.check_api_availability()
+        
+        if api_status["available"]:
+            st.success(f"✅ **API Evolution conectada** (⚡ {api_status['response_time_ms']}ms)")
+            try:
+                groups = control.fetch_groups()
+                mode = "online"
+            except Exception as e:
+                st.warning(f"⚠️ **API lenta, usando modo offline**: {str(e)[:100]}...")
+                groups = control.fetch_groups(offline_mode=True)
+                mode = "offline"
+        else:
+            st.warning(f"🔌 **API indisponível**: {api_status['message']}")
+            st.info("📋 **Trabalhando com dados locais (modo offline)**")
+            groups = control.fetch_groups(offline_mode=True)
+            mode = "offline"
+            
+        ut = GroupUtils()
+        group_map, options = ut.map(groups)
+        sender = SendSandeco()
+        
+        return {
+            "control": control,
+            "groups": groups,
+            "ut": ut,
+            "group_map": group_map,
+            "options": options,
+            "sender": sender,
+            "mode": mode,
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "control": None,
+            "groups": [],
+            "ut": None,
+            "group_map": {},
+            "options": [],
+            "sender": None,
+            "mode": "error",
+            "error": str(e)
+        }
+
+# Initialize components
+with st.spinner("🔄 Inicializando sistema..."):
+    components = initialize_components()
+
+control = components["control"]
+groups = components["groups"]
+ut = components["ut"]
+group_map = components["group_map"]
+options = components["options"]
+sender = components["sender"]
+mode = components["mode"]
+initialization_error = components["error"]
 
 col1, col2 = st.columns([1, 1])
 
-# Check for initialization errors
+# Check for initialization errors or provide mode information
 if initialization_error:
     st.error("❌ **Erro na Inicialização**")
     if "autenticação" in initialization_error.lower():
@@ -61,17 +128,34 @@ if initialization_error:
         st.error(f"Erro: {initialization_error}")
     st.stop()  # Stop execution if there's an initialization error
 
+# Show mode information
+if mode == "offline":
+    st.info("🔒 **Modo Offline Ativo** - Trabalhando com dados salvos localmente")
+    if st.button("🔄 Tentar Reconectar API"):
+        st.cache_data.clear()
+        st.rerun()
+elif mode == "online":
+    if st.button("🔄 Atualizar Grupos da API"):
+        st.cache_data.clear()
+        st.rerun()
+
 def load_scheduled_groups():
+    csv_path = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
     try:
-        df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'group_summary.csv'))
+        df = pd.read_csv(csv_path)
         return df[df['enabled'] == True]
-    except Exception:
+    except FileNotFoundError:
+        st.warning(f"Arquivo group_summary.csv não encontrado em {csv_path}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Erro ao carregar grupos agendados: {e}")
         return pd.DataFrame()
 
 
 def delete_scheduled_group(group_id):
+    csv_path = os.path.join(PROJECT_ROOT, "data", "group_summary.csv")
     try:
-        df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'group_summary.csv'))
+        df = pd.read_csv(csv_path)
         if group_id not in df['group_id'].values:
             st.error(f"Grupo com ID {group_id} não encontrado!")
             return False
@@ -82,9 +166,12 @@ def delete_scheduled_group(group_id):
         except Exception as e:
             st.warning(f"Aviso: Não foi possível remover a tarefa: {e}")
         df = df[df['group_id'] != group_id]
-        df.to_csv(os.path.join(os.path.dirname(__file__), '..', 'group_summary.csv'), index=False)
+        df.to_csv(csv_path, index=False)
         st.success("Grupo removido do arquivo de configuração")
         return True
+    except FileNotFoundError:
+        st.error(f"Arquivo group_summary.csv não encontrado em {csv_path}")
+        return False
     except Exception as e:
         st.error(f"Erro ao remover grupo: {e}")
         return False
@@ -196,7 +283,8 @@ with col2:
             send_to_group = st.checkbox("Enviar Resumo para o Grupo", value=False)
             send_to_personal = st.checkbox("Enviar Resumo para o Meu Celular", value=True)
             min_messages_summary = st.slider("Mínimo de Mensagens para Gerar Resumo:", 1, 200, 50) # Novo slider
-            python_script = os.path.join(os.path.dirname(__file__), '..', 'summary.py')
+            # Path to the summary script in core
+            python_script_path = os.path.join(PROJECT_ROOT, "src", "whatsapp_manager", "core", "summary.py")
             if st.button("Salvar Configurações"):
                 task_name = f"ResumoGrupo_{selected_group.group_id}"
                 try:
@@ -224,7 +312,7 @@ with col2:
                         is_names=is_names,
                         send_to_group=send_to_group,
                         send_to_personal=send_to_personal,
-                        script=python_script,
+                        script=python_script_path, # Use updated path
                         min_messages_summary=min_messages_summary,  # Passar o novo valor
                         **additional_params
                     ):
@@ -232,7 +320,7 @@ with col2:
                             if periodicidade == "Diariamente":
                                 TaskScheduled.create_task(
                                     task_name=task_name,
-                                    python_script_path=python_script,
+                                    python_script_path=python_script_path, # Use updated path
                                     schedule_type='DAILY',
                                     time=horario.strftime("%H:%M")
                                 )
@@ -241,7 +329,7 @@ with col2:
                                 next_minute = datetime.now().replace(second=0, microsecond=0) + pd.Timedelta(minutes=1)
                                 TaskScheduled.create_task(
                                     task_name=task_name,
-                                    python_script_path=python_script,
+                                    python_script_path=python_script_path, # Use updated path
                                     schedule_type='ONCE',
                                     date=next_minute.strftime("%Y-%m-%d"),
                                     time=next_minute.strftime("%H:%M")
