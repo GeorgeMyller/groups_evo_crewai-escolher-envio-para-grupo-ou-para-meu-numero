@@ -19,7 +19,7 @@ def test_offline_mode():
     try:
         # Initialize controller
         print("📡 Initializing GroupController...")
-        controller = GroupController(api_timeout=60)
+        controller = GroupController()
         
         # Check API status
         print("🔍 Checking API availability...")

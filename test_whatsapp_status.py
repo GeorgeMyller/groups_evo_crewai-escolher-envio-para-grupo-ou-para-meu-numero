@@ -21,7 +21,7 @@ def main():
     try:
         # Initialize controller
         print("📡 Inicializando GroupController...")
-        controller = GroupController(api_timeout=60)
+        controller = GroupController()
         
         # Test API availability
         print("\n🔍 1. Verificando disponibilidade da API...")

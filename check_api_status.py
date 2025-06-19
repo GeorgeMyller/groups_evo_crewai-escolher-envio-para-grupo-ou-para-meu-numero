@@ -68,7 +68,7 @@ def test_group_controller():
     print("="*50)
     
     try:
-        controller = GroupController(api_timeout=10)
+        controller = GroupController()
         
         # Verifica status da API
         api_status = controller.check_api_availability()
