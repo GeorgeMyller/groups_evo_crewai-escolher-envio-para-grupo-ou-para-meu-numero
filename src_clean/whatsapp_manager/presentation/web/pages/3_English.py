@@ -140,11 +140,13 @@ with col1:
 
     # --- Scheduled Groups Management ---
     st.subheader("Scheduled Tasks")
-    scheduled_groups = group_service.group_repository.load_all_summary_data()
-    if not scheduled_groups.empty:
+    scheduled_groups_dict = group_service.group_repository.load_all_summary_data()
+    import pandas as pd
+    if scheduled_groups_dict:
+        scheduled_groups = pd.DataFrame(list(scheduled_groups_dict.values()))
         group_dict = {group.group_id: group.name for group in groups}
         scheduled_groups['name'] = scheduled_groups['group_id'].map(group_dict).fillna("Name not found")
-        
+
         options_list = [f"{row['name']} - {row['horario']}" for _, row in scheduled_groups.iterrows()]
         selected_idx = st.selectbox("Scheduled Summaries:", range(len(options_list)), format_func=lambda x: options_list[x])
 
@@ -153,7 +155,7 @@ with col1:
             st.write(f"**ID:** `{selected_info['group_id']}`")
             st.write(f"**Time:** {selected_info['horario']}")
             st.write(f"**Frequency:** {'Daily' if pd.isna(selected_info.get('start_date')) else 'Once'}")
-            
+
             if st.button("Remove Schedule", key=f"del_{selected_info['group_id']}"):
                 with st.spinner("Removing schedule..."):
                     try:
