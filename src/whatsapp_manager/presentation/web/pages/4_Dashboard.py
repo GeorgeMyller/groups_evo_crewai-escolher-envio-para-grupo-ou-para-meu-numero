@@ -58,8 +58,9 @@ st.markdown("""
 # Display application header with WhatsApp-style green color
 st.markdown('<h1 class="main-header">📊 WhatsApp Group Summary Analytics Dashboard</h1>', unsafe_allow_html=True)
 
-# Define Project Root assuming this file is src/whatsapp_manager/ui/pages/4_Dashboard.py
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+# Define Project Root. This file is in src/whatsapp_manager/presentation/web/pages/
+# Navigate five levels up to reach the project root /app/.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
 LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "data", "log_summary.txt")
 
 def parse_log_entries(log_content):
@@ -541,3 +542,5 @@ if not log_df.empty:
     
 else:
     st.info("Não há dados de log disponíveis para exibição. / No log data available to display.")
+
+[end of src/whatsapp_manager/presentation/web/pages/4_Dashboard.py]

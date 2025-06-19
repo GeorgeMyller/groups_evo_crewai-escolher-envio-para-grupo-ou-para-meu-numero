@@ -24,7 +24,7 @@ build-backend = "setuptools.build_meta"
 # backend-path is not strictly necessary if setuptools is in default path
 
 [tool.setuptools.packages.find]
-where = ["src_clean"]
+where = ["src"]
 include = ["whatsapp_manager*"]
 # namespaces = false # Optional: default is true, which is fine for src-layout
 # exclude = [] # Optional: if you had specific sub-packages to exclude

@@ -1,5 +1,6 @@
 """
-Módulo para sumarização de mensagens de grupos - versão leve sem crewai
+Módulo para utilitários de processamento de texto.
+Inclui funções para limpeza de texto e sumarizações simples.
 """
 
 import re
@@ -9,16 +10,17 @@ def clean_text(text: str) -> str:
     """Remove caracteres especiais, links e outros elementos indesejados"""
     # Remove URLs
     text = re.sub(r'https?://\S+|www\.\S+', '', text)
-    # Remove emojis e caracteres especiais
-    text = re.sub(r'[^\w\s]', '', text)
+    # Remove emojis e caracteres especiais (mantendo acentos e cedilha básicos para português)
+    text = re.sub(r'[^\w\sà-úÀ-ÚçÇ]', '', text) # Ajustado para manter acentos
     # Remove espaços extras
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-def summarize_messages(messages: List[str], max_length: int = 100) -> str:
+def summarize_messages_simple(messages: List[str], max_length: int = 100) -> str:
     """
-    Versão leve de sumarização que não usa crewai.
-    Retorna as primeiras max_length palavras das mensagens.
+    Versão leve de sumarização que não usa IA.
+    Retorna as primeiras max_length palavras das mensagens concatenadas e limpas.
+    Renamed from summarize_messages to avoid potential future conflicts.
     """
     if not messages:
         return "Não há mensagens para sumarizar."
@@ -29,17 +31,17 @@ def summarize_messages(messages: List[str], max_length: int = 100) -> str:
     # Obter as primeiras palavras
     words = all_text.split()
     if len(words) <= max_length:
-        return all_text
+        return all_text if all_text else "Conteúdo insuficiente após limpeza."
     
     # Retornar as primeiras max_length palavras
     summary = " ".join(words[:max_length]) + "..."
     
     return summary
 
-def summarize_by_topic(messages: List[str]) -> dict:
+def get_top_topics_simple(messages: List[str], top_n: int = 5) -> dict:
     """
-    Versão simplificada de sumarização por tópico sem IA.
-    Apenas conta ocorrências de palavras e retorna as mais frequentes.
+    Versão simplificada de identificação de tópicos por frequência de palavras (sem IA).
+    Renamed from summarize_by_topic for clarity.
     """
     if not messages:
         return {"Sem mensagens": "Nenhuma mensagem encontrada"}
@@ -50,7 +52,7 @@ def summarize_by_topic(messages: List[str]) -> dict:
     # Separar em palavras
     words = all_text.split()
     
-    # Remover palavras comuns (stop words em português)
+    # Remover palavras comuns (stop words em português) - lista pode ser expandida/refinada
     stop_words = {'de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 
                  'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 
                  'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu', 'sua', 'ou', 'ser', 
@@ -86,15 +88,33 @@ def summarize_by_topic(messages: List[str]) -> dict:
         else:
             word_freq[word] = 1
     
-    # Pegar as 5 palavras mais frequentes
-    top_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:5]
+    # Pegar as N palavras mais frequentes
+    top_words_items = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:top_n]
     
     # Criar resumo simples baseado nas palavras mais frequentes
     topics = {}
-    for word, freq in top_words:
-        topics[word.capitalize()] = f"Mencionado {freq} vezes"
+    for word_item, freq in top_words_items: # Corrected variable name here
+        topics[word_item.capitalize()] = f"Mencionado {freq} vezes" # And here
     
     if not topics:
         topics["Geral"] = "Não foi possível identificar tópicos claros nas mensagens."
     
     return topics
+
+# Adicionando um exemplo de como usar, caso este arquivo seja executado diretamente
+if __name__ == '__main__':
+    sample_messages = [
+        "Olá pessoal, tudo bem? Alguém pode me ajudar com o erro X?",
+        "Amanhã teremos reunião às 10h para discutir o projeto Y.",
+        "Não se esqueçam de verificar o link: https://example.com",
+        "Obrigado pela ajuda, João!",
+        "Qual a solução para o problema Z? Já tentei de tudo.",
+        "Reunião confirmada para amanhã."
+    ]
+
+    print("Texto Limpo (primeira mensagem):")
+    print(clean_text(sample_messages[0]))
+    print("\nResumo Simples:")
+    print(summarize_messages_simple(sample_messages, 20))
+    print("\nTópicos Principais (Simples):")
+    print(get_top_topics_simple(sample_messages))

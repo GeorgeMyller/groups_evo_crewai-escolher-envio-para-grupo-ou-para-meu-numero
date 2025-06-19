@@ -1,12 +1,43 @@
 # Third-party library imports
 import streamlit as st
+import os # Added for path joining
 
 st.set_page_config(page_title='WhatsApp Group Resumer', layout='wide')
 
+# Function to load external CSS
+def load_css(file_name):
+    # Construct path relative to the project root
+    # Assuming this app.py is in src/whatsapp_manager/presentation/web/
+    # and styles.css is in src/whatsapp_manager/presentation/web/assets/
+    # The path for open() should be relative to the execution context (usually project root for streamlit)
+    # or an absolute path.
+    # For robustness, construct path from this file's location if possible,
+    # or use a path relative to assumed project root.
+
+    # Path relative to project root, assuming streamlit runs from there
+    # More robust approach: current_dir = os.path.dirname(__file__)
+    # css_path = os.path.join(current_dir, "assets", "styles.css")
+    # For this environment, let's use the direct path from root as per instructions.
+
+    # Corrected path assuming execution from project root or similar context
+    # where 'src' is a top-level directory.
+    project_root_relative_path = file_name
+
+    try:
+        with open(project_root_relative_path) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(f"CSS file not found at {project_root_relative_path}. Make sure the path is correct.")
+
+# Load CSS from external file
+# Path should be relative to the project root if Streamlit is run from there.
+load_css("src/whatsapp_manager/presentation/web/assets/styles.css")
+
 # --- Light Theme CSS ---
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+# The st.markdown block containing CSS has been removed and its content moved to styles.css
+# st.markdown("""
+# <style>
+# @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 /* --- Light Professional Theme --- */
 
@@ -174,10 +205,10 @@ div[data-baseweb="popover"] li[role="option"]:hover { background-color: #F0F2F6;
 
 /* Utility: Add more space below inputs */
 .stTextInput, .stTextArea, .stDateInput, .stTimeInput, .stSelectbox, .stCheckbox { margin-bottom: 20px !important; }
-</style>
-""",
-    unsafe_allow_html=True
-)
+# </style> # End of CSS content previously here
+# """,
+#     unsafe_allow_html=True # This st.markdown call is now removed or commented out
+# ) # End of the st.markdown call for CSS
 
 # --- Landing Page Content ---
 

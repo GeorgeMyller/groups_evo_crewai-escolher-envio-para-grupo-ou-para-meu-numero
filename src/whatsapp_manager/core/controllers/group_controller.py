@@ -47,9 +47,7 @@ class GroupController:
         self.group_repository = GroupRepository()
         self.group_service = GroupService(self.evolution_client, self.group_repository)
         self.message_service = MessageService(self.evolution_client)
-        
-        # Cache interno
-        self._groups_cache: List[Group] = []
+        # Removed internal cache: self._groups_cache as GroupService handles caching.
     
     def _setup_environment(self):
         """Configura variáveis de ambiente"""
@@ -85,21 +83,21 @@ class GroupController:
             Lista de grupos
         """
         try:
-            self._groups_cache = self.group_service.fetch_groups(force_refresh)
-            return self._groups_cache
+            # GroupService handles its own caching.
+            return self.group_service.fetch_groups(force_refresh)
         except Exception as e:
             print(f"Erro ao buscar grupos: {e}")
-            # Fallback para dados locais
+            # Fallback para dados locais via GroupService
             return self.group_service.load_groups_from_cache()
     
     def get_groups(self) -> List[Group]:
         """
-        Retorna grupos em cache ou busca se necessário
-        Returns cached groups or fetches if needed
+        Retorna grupos, buscando via GroupService (que handles caching).
+        Returns groups, fetching via GroupService (which handles caching).
         """
-        if not self._groups_cache:
-            return self.fetch_groups()
-        return self._groups_cache
+        # Always fetch from service; service handles its own cache.
+        # force_refresh=False ensures service attempts to use its cache first.
+        return self.fetch_groups(force_refresh=False)
     
     def find_group_by_id(self, group_id: str) -> Optional[Group]:
         """

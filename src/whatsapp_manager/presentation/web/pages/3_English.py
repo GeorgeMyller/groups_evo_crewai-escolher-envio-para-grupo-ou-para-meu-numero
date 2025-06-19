@@ -10,38 +10,25 @@ import streamlit as st
 from dotenv import load_dotenv
 
 # Local application/library imports
-# Define Project Root assuming this file is in src/whatsapp_manager/ui/pages/
-# Navigate four levels up to reach the project root.
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+# Define Project Root. This file is in src/whatsapp_manager/presentation/web/pages/
+# Navigate five levels up to reach the project root /app/.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
 
-# Add src to Python path for imports
+# Add src to Python path for imports, if not already there
+# This allows imports like `from whatsapp_manager.core...`
 import sys
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, os.path.join(PROJECT_ROOT, 'src'))
+SRC_PATH = os.path.join(PROJECT_ROOT, 'src')
+if SRC_PATH not in sys.path:
+    sys.path.insert(0, SRC_PATH)
 
 # Import local modules
-from whatsapp_manager.core.group_controller import GroupController
-from whatsapp_manager.utils.groups_util import GroupUtils
-from whatsapp_manager.utils.task_scheduler import TaskScheduled
-from whatsapp_manager.core.send_sandeco import SendSandeco
-
-# --- Light Theme CSS ---
-# Define Project Root assuming this file is src/whatsapp_manager/ui/pages/3_English.py
-# Navigate four levels up to reach the project root.
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-
-# Adjust sys.path if necessary for Streamlit's execution context
-import sys
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, os.path.join(PROJECT_ROOT, 'src'))
-
-from whatsapp_manager.core.group_controller import GroupController
-from whatsapp_manager.utils.groups_util import GroupUtils
-from whatsapp_manager.utils.task_scheduler import TaskScheduled
-from whatsapp_manager.core.send_sandeco import SendSandeco
+from whatsapp_manager.core.controllers.group_controller import GroupController
+from whatsapp_manager.shared.utils.group_utils import GroupUtilsService
+from whatsapp_manager.infrastructure.scheduling.task_scheduler import TaskSchedulingService
+# SendSandeco import removed
 
 
-# --- Light Theme CSS ---
+# --- Page Setup ---
 st.set_page_config(page_title='WhatsApp Group Resumer - EN', layout='wide')
 
 # This page is the English version of the app
@@ -80,9 +67,9 @@ def initialize_components():
                 mode = "offline"
                 st.warning("⚠️ **No data available** - Check connectivity")
             
-        ut = GroupUtils()
-        group_map, options = ut.map(groups)
-        sender = SendSandeco()
+        ut = GroupUtilsService() # Updated to GroupUtilsService
+        group_map, options = ut.create_group_options_map(groups) # Updated method call
+        # sender = SendSandeco() # Removed SendSandeco instantiation
         
         return {
             "control": control,
@@ -90,7 +77,7 @@ def initialize_components():
             "ut": ut,
             "group_map": group_map,
             "options": options,
-            "sender": sender,
+            # "sender": sender, # Removed sender from return
             "mode": mode,
             "error": None
         }
@@ -173,7 +160,7 @@ def delete_scheduled_group(group_id):
             return False
         task_name = f"GroupSummary_{group_id}" # Task name in English version
         try:
-            TaskScheduled.delete_task(task_name)
+            TaskSchedulingService().remove_task(task_name) # Instantiate and call
             st.success(f"Task {task_name} removed from system")
         except Exception as e:
             st.warning(f"Warning: Could not remove task: {e}")
@@ -226,9 +213,10 @@ with col1:
             format_func=lambda x: x[0]
         )[1]
         selected_group = group_map[selected_group_id]
-        head_group = ut.head_group(selected_group.name, selected_group.picture_url)
-        st.markdown(head_group, unsafe_allow_html=True)
-        ut.group_details(selected_group)
+        # Updated method calls for GroupUtilsService
+        head_group_html = ut.create_group_header_display(selected_group.name, selected_group.picture_url)
+        st.markdown(head_group_html, unsafe_allow_html=True)
+        ut.display_group_details(selected_group)
 
         st.subheader("Scheduled Tasks")
         scheduled_groups = load_scheduled_groups()
@@ -329,7 +317,8 @@ with col2:
 
                     # Ensure min_messages_summary is passed to update_summary
                     # The original code was missing this in the English version
-                    update_result = control.update_summary(
+                    # Corrected method call to update_group_summary_settings
+                    update_result = control.update_group_summary_settings(
                         group_id=selected_group.group_id,
                         horario=summary_time_val.strftime("%H:%M") if summary_time_val else None,
                         enabled=enabled,
@@ -337,30 +326,25 @@ with col2:
                         is_names=is_names,
                         send_to_group=send_to_group,
                         send_to_personal=send_to_personal,
-                        script=python_script_path,
-                        min_messages_summary=min_messages_summary, # Added missing parameter
+                        # script=python_script_path, # script param not in update_group_summary_settings
+                        min_messages_summary=min_messages_summary,
                         **additional_params
                     )
 
                     if update_result:
                         if enabled:
-                            if frequency == "Daily":
-                                TaskScheduled.create_task(
+                            scheduler = TaskSchedulingService() # Instantiate the service
+                            if frequency == "Daily" and summary_time_val:
+                                scheduler.create_task(
                                     task_name=task_name,
                                     python_script_path=python_script_path,
                                     schedule_type='DAILY',
-                                    time=summary_time_val.strftime("%H:%M") if summary_time_val else "22:00" # Default if None
+                                    time=summary_time_val.strftime("%H:%M")
                                 )
-                                st.success(f"Settings saved! Summary will run daily at {summary_time_val.strftime('%H:%M') if summary_time_val else '22:00'}")
-                            else: # "Once"
-                                # Ensure time objects are not None before formatting
+                                st.success(f"Settings saved! Summary will run daily at {summary_time_val.strftime('%H:%M')}")
+                            elif frequency == "Once":
                                 if start_date_val and start_time_val:
-                                    # For "Once", schedule it for the specified start_date and start_time
-                                    # If immediate, it might need adjustment or use RunAtLoad logic if on Darwin
-                                    # For simplicity, we'll schedule it for the given date/time.
-                                    # The original logic for "next_minute" for "Once" tasks was a bit confusing,
-                                    # it's better to schedule for the user-selected time.
-                                    TaskScheduled.create_task(
+                                    scheduler.create_task(
                                         task_name=task_name,
                                         python_script_path=python_script_path,
                                         schedule_type='ONCE',
@@ -370,6 +354,8 @@ with col2:
                                     st.success(f"Settings saved! Summary scheduled for {start_date_val.strftime('%d/%m/%Y')} at {start_time_val.strftime('%H:%M')}")
                                 else:
                                     st.error("Start date and time must be set for 'Once' schedule.")
+                            else:
+                                st.warning("Invalid scheduling configuration.")
                 except Exception as e:
                     st.error(f"Error configuring schedule: {str(e)}")
                     st.exception(e) # Show full traceback for debugging
@@ -377,3 +363,5 @@ with col2:
         st.warning("No groups found or system not initialized correctly!")
     else:
         st.warning("No groups found!")
+
+[end of src/whatsapp_manager/presentation/web/pages/3_English.py]

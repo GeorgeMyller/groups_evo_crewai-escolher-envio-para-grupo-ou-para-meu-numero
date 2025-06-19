@@ -13,7 +13,14 @@ providing a simplified interface and error handling.
 from typing import List, Dict, Any, Optional
 from evolutionapi.client import EvolutionClient
 from evolutionapi.exceptions import EvolutionAuthenticationError, EvolutionAPIError
+from evolutionapi.models.message import TextMessage, MediaMessage # Added for media messages
 import time
+import os # Added for os.path.exists and os.path.basename
+import logging # Added for logging
+
+# Configure logging if not already configured at a higher level
+# Basic config to ensure logs are seen if no other config is set.
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class EvolutionClientWrapper:
