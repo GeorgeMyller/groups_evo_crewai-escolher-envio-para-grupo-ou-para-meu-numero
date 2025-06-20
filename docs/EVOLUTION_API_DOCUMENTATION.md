@@ -34,11 +34,11 @@ Evolution API v2 is a robust platform for WhatsApp automation that supports:
 **Endpoint:** `POST /instance/create`
 
 ```bash
-curl -X POST http://192.168.1.151:8081/instance/create \
+curl -X POST http://<BASE_URL>/instance/create \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "instanceName": "AgentGeorgeMyller",
+    "instanceName": "<INSTANCE_NAME>",
     "qrcode": true,
     "integration": "WHATSAPP-BAILEYS"
   }'
@@ -55,28 +55,26 @@ curl -X POST http://192.168.1.151:8081/instance/create \
 ### 2. Connect Instance
 
 **Endpoint:** `GET /instance/connect/{instance}`
-
 ```bash
-curl -X GET http://192.168.1.151:8081/instance/connect/AgentGeorgeMyller \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET http://<BASE_URL>/instance/connect/<INSTANCE_NAME> \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 **Response:**
 ```json
 {
-  "pairingCode": "WZYEH1YY",
-  "code": "2@y8eK+bjtEjUWy9/FOM...",
-  "count": 1
+  "pairingCode": "<PAIRING_CODE>",
+  "code": "<QR_CODE>",
+  "count": <COUNT>
 }
 ```
 
 ### 3. Check Instance Status
 
 **Endpoint:** `GET /instance/fetchInstances`
-
 ```bash
-curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET http://<BASE_URL>/instance/fetchInstances \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 **Response:**
@@ -84,11 +82,11 @@ curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
 [
   {
     "instance": {
-      "instanceName": "AgentGeorgeMyller",
-      "owner": "351912331561@s.whatsapp.net",
-      "profileName": "George Myller",
-      "profilePictureUrl": "https://...",
-      "status": "open"
+      "instanceName": "<INSTANCE_NAME>",
+      "owner": "<OWNER_NUMBER>@s.whatsapp.net",
+      "profileName": "<PROFILE_NAME>",
+      "profilePictureUrl": "<PROFILE_PICTURE_URL>",
+      "status": "<STATUS>"
     }
   }
 ]
@@ -103,10 +101,9 @@ curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
 ### 4. Restart Instance
 
 **Endpoint:** `PUT /instance/restart/{instance}`
-
 ```bash
-curl -X PUT http://192.168.1.151:8081/instance/restart/AgentGeorgeMyller \
-  -H "apikey: YOUR_API_KEY"
+curl -X PUT http://<BASE_URL>/instance/restart/<INSTANCE_NAME> \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### 5. Delete Instance
@@ -114,8 +111,8 @@ curl -X PUT http://192.168.1.151:8081/instance/restart/AgentGeorgeMyller \
 **Endpoint:** `DELETE /instance/delete/{instance}`
 
 ```bash
-curl -X DELETE http://192.168.1.151:8081/instance/delete/AgentGeorgeMyller \
-  -H "apikey: YOUR_API_KEY"
+curl -X DELETE http://<BASE_URL>/instance/delete/<INSTANCE_NAME> \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ## Group Management
@@ -125,8 +122,8 @@ curl -X DELETE http://192.168.1.151:8081/instance/delete/AgentGeorgeMyller \
 **Endpoint:** `GET /group/fetchAllGroups/{instance}`
 
 ```bash
-curl -X GET "http://192.168.1.151:8081/group/fetchAllGroups/AgentGeorgeMyller?getParticipants=false" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/group/fetchAllGroups/<INSTANCE_NAME>?getParticipants=false" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 **Parameters:**
@@ -136,18 +133,18 @@ curl -X GET "http://192.168.1.151:8081/group/fetchAllGroups/AgentGeorgeMyller?ge
 ```json
 [
   {
-    "id": "120363295648424210@g.us",
-    "subject": "Example Group",
-    "subjectOwner": "553198296801@s.whatsapp.net",
-    "subjectTime": 1714769954,
+    "id": "<GROUP_ID>",
+    "subject": "<GROUP_NAME>",
+    "subjectOwner": "<OWNER_NUMBER>@s.whatsapp.net",
+    "subjectTime": <TIMESTAMP>,
     "pictureUrl": null,
-    "size": 10,
-    "creation": 1714769954,
-    "owner": "553198296801@s.whatsapp.net",
-    "desc": "Group description",
-    "descId": "BAE57E16498982ED",
-    "restrict": false,
-    "announce": false
+    "size": <GROUP_SIZE>,
+    "creation": <TIMESTAMP>,
+    "owner": "<OWNER_NUMBER>@s.whatsapp.net",
+    "desc": "<GROUP_DESCRIPTION>",
+    "descId": "<DESCRIPTION_ID>",
+    "restrict": <RESTRICT_SETTING>,
+    "announce": <ANNOUNCE_SETTING>
   }
 ]
 ```
@@ -157,8 +154,8 @@ curl -X GET "http://192.168.1.151:8081/group/fetchAllGroups/AgentGeorgeMyller?ge
 **Endpoint:** `GET /group/findGroupByJid/{instance}`
 
 ```bash
-curl -X GET "http://192.168.1.151:8081/group/findGroupByJid/AgentGeorgeMyller?groupJid=120363295648424210@g.us" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/group/findGroupByJid/<INSTANCE_NAME>?groupJid=<GROUP_ID>" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### 3. Get Group Members
@@ -166,8 +163,8 @@ curl -X GET "http://192.168.1.151:8081/group/findGroupByJid/AgentGeorgeMyller?gr
 **Endpoint:** `GET /group/participants/{instance}`
 
 ```bash
-curl -X GET "http://192.168.1.151:8081/group/participants/AgentGeorgeMyller?groupJid=120363295648424210@g.us" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/group/participants/<INSTANCE_NAME>?groupJid=<GROUP_ID>" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### 4. Create Group
@@ -175,13 +172,13 @@ curl -X GET "http://192.168.1.151:8081/group/participants/AgentGeorgeMyller?grou
 **Endpoint:** `POST /group/create/{instance}`
 
 ```bash
-curl -X POST http://192.168.1.151:8081/group/create/AgentGeorgeMyller \
+curl -X POST http://<BASE_URL>/group/create/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "subject": "New Group",
-    "description": "Group description",
-    "participants": ["5511999999999@s.whatsapp.net"]
+    "subject": "<GROUP_NAME>",
+    "description": "<GROUP_DESCRIPTION>",
+    "participants": ["<PARTICIPANT_1>", "<PARTICIPANT_2>"]
   }'
 ```
 
@@ -190,13 +187,13 @@ curl -X POST http://192.168.1.151:8081/group/create/AgentGeorgeMyller \
 **Endpoint:** `PUT /group/updateGroupSettings/{instance}`
 
 ```bash
-curl -X PUT http://192.168.1.151:8081/group/updateGroupSettings/AgentGeorgeMyller \
+curl -X PUT http://<BASE_URL>/group/updateGroupSettings/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "groupJid": "120363295648424210@g.us",
-    "action": "announcement",
-    "value": true
+    "groupJid": "<GROUP_ID>",
+    "action": "<ACTION>",
+    "value": <BOOLEAN_VALUE>
   }'
 ```
 
@@ -212,12 +209,12 @@ curl -X PUT http://192.168.1.151:8081/group/updateGroupSettings/AgentGeorgeMylle
 **Endpoint:** `POST /message/sendText/{instance}`
 
 ```bash
-curl -X POST http://192.168.1.151:8081/message/sendText/AgentGeorgeMyller \
+curl -X POST http://<BASE_URL>/message/sendText/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "number": "120363295648424210@g.us",
-    "text": "Hello group!"
+    "number": "<RECIPIENT_ID>",
+    "text": "<MESSAGE_TEXT>"
   }'
 ```
 
@@ -226,14 +223,14 @@ curl -X POST http://192.168.1.151:8081/message/sendText/AgentGeorgeMyller \
 **Endpoint:** `POST /message/sendMedia/{instance}`
 
 ```bash
-curl -X POST http://192.168.1.151:8081/message/sendMedia/AgentGeorgeMyller \
+curl -X POST http://<BASE_URL>/message/sendMedia/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "number": "120363295648424210@g.us",
-    "mediatype": "image",
-    "media": "https://example.com/image.jpg",
-    "caption": "Image caption"
+    "number": "<RECIPIENT_ID>",
+    "mediatype": "<MEDIA_TYPE>",
+    "media": "<MEDIA_URL>",
+    "caption": "<MEDIA_CAPTION>"
   }'
 ```
 
@@ -242,8 +239,8 @@ curl -X POST http://192.168.1.151:8081/message/sendMedia/AgentGeorgeMyller \
 **Endpoint:** `GET /chat/findMessages/{instance}`
 
 ```bash
-curl -X GET "http://192.168.1.151:8081/chat/findMessages/AgentGeorgeMyller?number=120363295648424210@g.us&limit=50" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/chat/findMessages/<INSTANCE_NAME>?number=<GROUP_ID>@g.us&limit=<LIMIT>" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ## Your Current Setup
@@ -251,25 +248,25 @@ curl -X GET "http://192.168.1.151:8081/chat/findMessages/AgentGeorgeMyller?numbe
 Based on your configuration in `.env`:
 
 ```properties
-EVO_API_TOKEN=3v0lut10n429683C4C977415CAAFCCE10F7D57E113v0lut10n
-EVO_INSTANCE_NAME=AgentGeorgeMyller
-EVO_BASE_URL=http://192.168.1.151:8081
-WHATSAPP_NUMBER=351912331561
+EVO_API_TOKEN=<YOUR_API_TOKEN>
+EVO_INSTANCE_NAME=<YOUR_INSTANCE_NAME>
+EVO_BASE_URL=<YOUR_BASE_URL>
+WHATSAPP_NUMBER=<YOUR_WHATSAPP_NUMBER>
 ```
 
 ### Quick Status Check
 
 ```bash
 # Check API status
-curl http://192.168.1.151:8081
+curl http://<BASE_URL>
 
 # Check your instance status
-curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
-  -H "apikey: 3v0lut10n429683C4C977415CAAFCCE10F7D57E113v0lut10n"
+curl -X GET http://<BASE_URL>/instance/fetchInstances \
+  -H "apikey: <YOUR_API_KEY>"
 
 # Get your groups
-curl -X GET "http://192.168.1.151:8081/group/fetchAllGroups/AgentGeorgeMyller?getParticipants=false" \
-  -H "apikey: 3v0lut10n429683C4C977415CAAFCCE10F7D57E113v0lut10n"
+curl -X GET "http://<BASE_URL>/group/fetchAllGroups/<INSTANCE_NAME>?getParticipants=false" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### Your System Integration
@@ -286,53 +283,54 @@ Your `GroupController` class uses these endpoints:
 
 ```bash
 # Step 1: Connect instance
-curl -X GET http://192.168.1.151:8081/instance/connect/AgentGeorgeMyller \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET http://<BASE_URL>/instance/connect/<INSTANCE_NAME> \
+  -H "apikey: <YOUR_API_KEY>"
 
 # Step 2: Scan QR code in WhatsApp
-# Go to http://192.168.1.151:8081/manager
+# Go to http://<BASE_URL>/manager
 
 # Step 3: Verify connection
-curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET http://<BASE_URL>/instance/fetchInstances \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### 2. Monitor Group Activity
+```
 
 ```bash
 # Get all groups with member count
-curl -X GET "http://192.168.1.151:8081/group/fetchAllGroups/AgentGeorgeMyller?getParticipants=false" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/group/fetchAllGroups/<INSTANCE_NAME>?getParticipants=false" \
+  -H "apikey: <YOUR_API_KEY>"
 
 # Get recent messages from a group
-curl -X GET "http://192.168.1.151:8081/chat/findMessages/AgentGeorgeMyller?number=GROUP_ID@g.us&limit=10" \
-  -H "apikey: YOUR_API_KEY"
+curl -X GET "http://<BASE_URL>/chat/findMessages/<INSTANCE_NAME>?number=<GROUP_ID>@g.us&limit=10" \
+  -H "apikey: <YOUR_API_KEY>"
 ```
 
 ### 3. Send Automated Messages
 
 ```bash
 # Send text to group
-curl -X POST http://192.168.1.151:8081/message/sendText/AgentGeorgeMyller \
+curl -X POST http://<BASE_URL>/message/sendText/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "number": "GROUP_ID@g.us",
-    "text": "Automated message from bot"
+    "number": "<GROUP_ID>@g.us",
+    "text": "<MESSAGE_TEXT>"
   }'
 ```
 
 ### 4. Webhook Setup
-
 ```bash
 # Set webhook for instance
-curl -X POST http://192.168.1.151:8081/webhook/set/AgentGeorgeMyller \
+curl -X POST http://<BASE_URL>/webhook/set/<INSTANCE_NAME> \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_API_KEY" \
+  -H "apikey: <YOUR_API_KEY>" \
   -d '{
-    "url": "https://your-server.com/webhook",
+    "url": "<WEBHOOK_URL>",
     "events": ["messages.upsert", "groups.upsert"]
   }'
+```
 ```
 
 ## Troubleshooting
@@ -359,15 +357,15 @@ curl -X POST http://192.168.1.151:8081/webhook/set/AgentGeorgeMyller \
 
 ```bash
 # Check API health
-curl http://192.168.1.151:8081
+curl http://<BASE_URL>
 
 # Check instance details
-curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
-  -H "apikey: YOUR_API_KEY" | jq '.'
+curl -X GET http://<BASE_URL>/instance/fetchInstances \
+  -H "apikey: <YOUR_API_KEY>" | jq '.'
 
 # Check specific instance
-curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
-  -H "apikey: YOUR_API_KEY" | jq '.[] | select(.instance.instanceName=="AgentGeorgeMyller")'
+curl -X GET http://<BASE_URL>/instance/fetchInstances \
+  -H "apikey: <YOUR_API_KEY>" | jq '.[] | select(.instance.instanceName=="<INSTANCE_NAME>")'
 ```
 
 ### Status Codes
@@ -400,7 +398,7 @@ curl -X GET http://192.168.1.151:8081/instance/fetchInstances \
 Use WebSocket connection for real-time events:
 
 ```javascript
-const ws = new WebSocket('ws://192.168.1.151:8081/instance/AgentGeorgeMyller');
+const ws = new WebSocket('ws://<BASE_URL>/instance/<INSTANCE_NAME>');
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
   console.log('Event:', data);
