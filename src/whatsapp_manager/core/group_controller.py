@@ -48,8 +48,9 @@ class GroupController:
         self.instance_token = os.getenv("EVO_INSTANCE_TOKEN")
         
         # File paths / Caminhos dos arquivos
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..', '..'))
+        self.csv_file = os.path.join(project_root, "data", "group_summary.csv")
         paths_this = os.path.dirname(__file__)
-        self.csv_file = os.path.join(paths_this, "group_summary.csv")
         self.cache_file = os.path.join(paths_this, "groups_cache.json")
         
         if not all([self.api_token, self.instance_id, self.instance_token]):
