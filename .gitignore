@@ -21,6 +21,7 @@ downloads/
 *.egg-info/
 .eggs/
 .installed.cfg
+uv.lock
 pip-wheel-metadata/
 
 # ====================
