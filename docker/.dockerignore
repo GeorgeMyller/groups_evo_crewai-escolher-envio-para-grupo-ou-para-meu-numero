@@ -77,3 +77,6 @@ Pipfile.lock
 
 # Ignore README backups
 README.md.bak
+
+#Iguinore cache directories
+.cache/

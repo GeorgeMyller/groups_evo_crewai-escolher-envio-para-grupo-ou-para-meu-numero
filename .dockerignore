@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env
+venv
+.venv
+ENV
+.coverage
+.pytest_cache
+*.egg-info/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (except README.md which is needed for build)
+docs/
+*.md
+!README.md
+
+# Development
+tests/
+.pytest_cache
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Cache directories
+.cache/
+.uv/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ignorar cache pesado e arquivos temporários
+
+data/cache/
+*.pyc
+__pycache__/
+*.log
+*.tar

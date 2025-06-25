@@ -12,7 +12,6 @@ WORKDIR /app
 # Copy all necessary files for package installation
 COPY pyproject.toml uv.lock* README.md ./
 COPY src/ ./src/
-COPY scripts/ ./scripts/
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
