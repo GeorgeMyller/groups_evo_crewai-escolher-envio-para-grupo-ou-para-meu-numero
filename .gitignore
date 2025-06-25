@@ -124,3 +124,6 @@ node_modules/
 whatsapp-summarizer.tar.gz
 whatsapp-group-summarizer.tar.gz
 app_image.tar
+data/cache/sha256-ff82381e2bea77d91c1b824c7afb83f6fb73e9f7de9dda631bcdbca564aa5435
+data/cache/sha256-2af3b81862c6be03c769683af18efdadb2c33f60ff32ab6f83e42c043d6c7816
+.venv/
