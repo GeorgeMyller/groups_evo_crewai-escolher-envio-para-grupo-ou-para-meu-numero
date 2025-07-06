@@ -40,18 +40,18 @@ class GroupController:
         # Environment setup / Configuração do ambiente
         env_path = os.path.join(os.path.dirname(__file__), '.env')
         load_dotenv(env_path, override=True)
-        
+
         # API Configuration / Configuração da API
         self.base_url = os.getenv("EVO_BASE_URL", 'http://localhost:8081')
         self.api_token = os.getenv("EVO_API_TOKEN")
         self.instance_id = os.getenv("EVO_INSTANCE_NAME")
         self.instance_token = os.getenv("EVO_INSTANCE_TOKEN")
-        
+
         # File paths / Caminhos dos arquivos
-        paths_this = os.path.dirname(__file__)
-        self.csv_file = os.path.join(paths_this, "group_summary.csv")
-        self.cache_file = os.path.join(paths_this, "groups_cache.json")
-        
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        self.csv_file = os.path.join(project_root, "data", "group_summary.csv")
+        self.cache_file = os.path.join(project_root, "data", "groups_cache.json")
+
         if not all([self.api_token, self.instance_id, self.instance_token]):
             raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados. / API_TOKEN, INSTANCE_NAME or INSTANCE_TOKEN not configured.")
         # Garantir non-null types para o type checker

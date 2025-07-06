@@ -3,13 +3,13 @@ Sistema de Agendamento de Tarefas Multiplataforma / Cross-platform Task Scheduli
 
 PT-BR:
 Este módulo implementa um sistema de agendamento de tarefas que funciona em Windows, 
-Linux e macOS. Fornece funcionalidades para criar, remover e listar tarefas agendadas,
-adaptando-se automaticamente ao sistema operacional em uso.
+Linux, macOS e Docker. Fornece funcionalidades para criar, remover e listar tarefas agendadas,
+adaptando-se automaticamente ao sistema operacional ou ambiente em uso.
 
 EN:
-This module implements a task scheduling system that works on Windows, Linux, and macOS.
+This module implements a task scheduling system that works on Windows, Linux, macOS, and Docker.
 Provides functionality to create, remove, and list scheduled tasks,
-automatically adapting to the operating system in use.
+automatically adapting to the operating system or environment in use.
 """
 
 import os
@@ -21,6 +21,64 @@ from typing import Dict, List, Optional, Union
 from enum import Enum
 
 from enum import Enum
+
+def is_running_in_docker() -> bool:
+    """
+    Detects if the code is running inside a Docker container.
+    
+    Returns:
+        bool: True if running in Docker, False otherwise
+    """
+    # Check Docker environment variable (most reliable)
+    docker_env = os.environ.get('DOCKER_ENV', '').lower() == 'true'
+    if docker_env:
+        return True
+    
+    # Check for Docker-specific files
+    docker_indicators = [
+        '/.dockerenv',
+        '/proc/1/cgroup'
+    ]
+    
+    for indicator in docker_indicators:
+        if os.path.exists(indicator):
+            if indicator == '/proc/1/cgroup':
+                try:
+                    with open(indicator, 'r') as f:
+                        content = f.read()
+                        if 'docker' in content or 'containerd' in content:
+                            return True
+                except:
+                    pass
+            else:
+                return True
+    
+    # Check hostname
+    try:
+        with open('/etc/hostname', 'r') as f:
+            hostname = f.read().strip()
+            if hostname.startswith('container') or hostname.startswith('docker'):
+                return True
+    except:
+        pass
+    
+    # Check for Docker marker file
+    if os.path.exists('/app/.docker_environment'):
+        return True
+    
+    # Check for typical Docker directory structure
+    if os.path.exists('/app') and os.path.exists('/app/src') and os.path.exists('/app/data'):
+        return True
+    
+    # Check for supervisord running (typical in our Docker setup)
+    try:
+        result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
+        if 'supervisord' in result.stdout:
+            return True
+    except:
+        pass
+    
+    return False
 
 
 class ScheduleType(Enum):
@@ -38,16 +96,26 @@ class OperatingSystem(Enum):
 
 class TaskSchedulingService:
     """
-    Cross-platform task scheduling service.
+    Cross-platform task scheduling service with Docker support.
     """
     
     def __init__(self):
         """Initialize the task scheduling service."""
+        self.is_docker = is_running_in_docker()
         self.os_name = platform.system()
         self._validate_os_support()
+        
+        if self.is_docker:
+            # Import Docker scheduler dynamically to avoid import issues
+            from .docker_task_scheduler import DockerTaskScheduler
+            self.docker_scheduler = DockerTaskScheduler
     
     def _validate_os_support(self) -> None:
         """Validate that the current OS is supported."""
+        if self.is_docker:
+            # Docker is always supported
+            return
+            
         supported_systems = [os.value for os in OperatingSystem]
         if self.os_name not in supported_systems:
             raise NotImplementedError(f"Operating system '{self.os_name}' is not supported")
@@ -115,10 +183,11 @@ class TaskSchedulingService:
                    python_script_path: str, 
                    schedule_type: Union[str, ScheduleType] = ScheduleType.DAILY,
                    date: Optional[str] = None, 
-                   time: str = '22:00') -> bool:
+                   time: str = '22:00',
+                   arguments: Optional[List[str]] = None) -> bool:
         """
         PT-BR:
-        Cria uma tarefa agendada no sistema operacional.
+        Cria uma tarefa agendada no sistema operacional ou no Docker.
         
         Parâmetros:
             task_name: Nome da tarefa
@@ -126,6 +195,7 @@ class TaskSchedulingService:
             schedule_type: Tipo de agendamento ('DAILY' ou 'ONCE')
             date: Data para execução única (formato: YYYY-MM-DD)
             time: Horário de execução (formato: HH:MM)
+            arguments: Argumentos opcionais para passar ao script
             
         Returns:
             bool: True se a tarefa foi criada com sucesso
@@ -134,7 +204,7 @@ class TaskSchedulingService:
             Exception: Para erros de agendamento
 
         EN:
-        Creates a scheduled task in the operating system.
+        Creates a scheduled task in the operating system or Docker.
         
         Parameters:
             task_name: Task name
@@ -142,6 +212,7 @@ class TaskSchedulingService:
             schedule_type: Schedule type ('DAILY' or 'ONCE')
             date: Date for one-time execution (format: YYYY-MM-DD)
             time: Execution time (format: HH:MM)
+            arguments: Optional arguments to pass to the script
             
         Returns:
             bool: True if task was created successfully
@@ -149,6 +220,18 @@ class TaskSchedulingService:
         Raises:
             Exception: For scheduling errors
         """
+        # Check if running in Docker and use Docker scheduler if so
+        if self.is_docker:
+            return self.docker_scheduler.create_task(
+                task_name=task_name,
+                python_script_path=python_script_path,
+                schedule_type=schedule_type.value if isinstance(schedule_type, ScheduleType) else schedule_type,
+                date=date,
+                time=time,
+                arguments=arguments
+            )
+        
+        # Continue with standard OS schedulers
         # Validate inputs
         self.validate_python_script(python_script_path)
         
@@ -321,6 +404,11 @@ class TaskSchedulingService:
         Returns:
             bool: True if task was removed successfully
         """
+        # Use Docker scheduler if in Docker
+        if self.is_docker:
+            return self.docker_scheduler.delete_task(task_name)
+            
+        # Otherwise use standard OS schedulers
         try:
             if self.os_name == OperatingSystem.WINDOWS.value:
                 result = subprocess.run(['schtasks', '/Delete', '/TN', task_name, '/F'], 
@@ -343,6 +431,18 @@ class TaskSchedulingService:
                 
         except Exception:
             return False
+            
+    def delete_task(self, task_name: str) -> bool:
+        """
+        Alias for remove_task to maintain API compatibility.
+        
+        Parameters:
+            task_name: Name of the task to delete
+            
+        Returns:
+            bool: True if task was deleted successfully
+        """
+        return self.remove_task(task_name)
     
     def list_tasks(self) -> List[Dict[str, str]]:
         """
@@ -351,6 +451,11 @@ class TaskSchedulingService:
         Returns:
             List of task information dictionaries
         """
+        # Use Docker scheduler if in Docker
+        if self.is_docker:
+            return self.docker_scheduler.list_tasks()
+            
+        # Otherwise use standard OS schedulers
         tasks = []
         
         try:

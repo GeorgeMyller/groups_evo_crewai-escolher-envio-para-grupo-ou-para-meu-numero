@@ -26,4 +26,8 @@ reorganization_backup/
 system.log
 *.log
 data/cache/
-*.csv
+# Permitir CSV específicos necessários
+#*.csv
+# Mas ignorar outros arquivos CSV que não são críticos
+logs/*.csv
+temp/*.csv

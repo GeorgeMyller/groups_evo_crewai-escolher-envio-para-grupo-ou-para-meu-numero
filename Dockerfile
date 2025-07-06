@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     procps \
     curl \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -29,10 +30,14 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app /app
 
-# Create necessary directories for logs and data
+# Create necessary directories for logs and data with proper permissions
 RUN mkdir -p /app/data/logs && \
-    chmod 755 /app/data && \
-    chmod 755 /app/data/logs
+    mkdir -p /app/data/cache && \
+    chmod 777 /app/data && \
+    chmod 777 /app/data/logs && \
+    chmod 777 /app/data/cache && \
+    touch /app/data/group_summary.csv && \
+    chmod 666 /app/data/group_summary.csv
 
 # Copy supervisord.conf to the correct location
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -41,7 +46,12 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY load_env.sh /usr/local/bin/load_env.sh
 RUN chmod +x /usr/local/bin/load_env.sh
 
+# Copy the entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 8501
 
-# Start supervisord which will manage both cron and streamlit
+# Use entrypoint script to setup environment and then run supervisord
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

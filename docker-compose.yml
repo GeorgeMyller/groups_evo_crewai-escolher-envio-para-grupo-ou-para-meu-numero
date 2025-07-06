@@ -11,6 +11,10 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - TZ=Europe/Lisbon  # Configura fuso horário de Portugal
+      - DOCKER_ENV=true   # Sinaliza explicitamente que estamos no Docker
     volumes:
       - /etc/localtime:/etc/localtime:ro  # Sincroniza com horário do sistema host
       - /etc/timezone:/etc/timezone:ro    # Sincroniza timezone do sistema host
+      - ./data:/app/data                  # Persiste os dados incluindo o CSV entre reinicializações
+      # Descomentar a linha abaixo para desenvolvimento, para ter acesso ao código fonte em tempo real
+      # - ./src:/app/src                  # Monta o código fonte para desenvolvimento

@@ -31,7 +31,24 @@ def is_running_in_docker():
     Returns:
         bool: True if running in Docker, False otherwise
     """
-    # Verifica se existem arquivos típicos do Docker
+    # Log da verificação para facilitar debug
+    log_dir = "/app/data" if os.path.exists("/app/data") else "/tmp"
+    log_path = os.path.join(log_dir, "docker_detection.log")
+    
+    def log_detection(message, result):
+        try:
+            with open(log_path, "a") as log_file:
+                log_file.write(f"[{datetime.now()}] {message}: {result}\n")
+        except:
+            pass  # Falhar silenciosamente se não conseguir logar
+    
+    # Primeiro teste: verifica ambiente Docker via variável de ambiente (mais confiável)
+    docker_env = os.environ.get('DOCKER_ENV', '').lower() == 'true'
+    log_detection("DOCKER_ENV environment variable", docker_env)
+    if docker_env:
+        return True
+    
+    # Segundo teste: verifica se existem arquivos típicos do Docker
     docker_indicators = [
         '/.dockerenv',
         '/proc/1/cgroup'
@@ -43,13 +60,51 @@ def is_running_in_docker():
                 try:
                     with open(indicator, 'r') as f:
                         content = f.read()
-                        if 'docker' in content or 'containerd' in content:
+                        docker_cgroup = 'docker' in content or 'containerd' in content
+                        log_detection(f"Docker indicator {indicator}", docker_cgroup)
+                        if docker_cgroup:
                             return True
-                except:
-                    pass
+                except Exception as e:
+                    log_detection(f"Error reading {indicator}", str(e))
             else:
+                log_detection(f"Docker indicator {indicator} exists", True)
                 return True
     
+    # Terceiro teste: verifica o nome do host
+    try:
+        with open('/etc/hostname', 'r') as f:
+            hostname = f.read().strip()
+            docker_hostname = hostname.startswith('container') or hostname.startswith('docker')
+            log_detection(f"Hostname check ({hostname})", docker_hostname)
+            if docker_hostname:
+                return True
+    except Exception as e:
+        log_detection("Error reading hostname", str(e))
+    
+    # Quarto teste: verifica a presença de um arquivo de sinalização específico
+    docker_marker = os.path.exists('/app/.docker_environment')
+    log_detection("Docker marker file exists", docker_marker)
+    if docker_marker:
+        return True
+    
+    # Quinto teste: verificar se estamos em um path típico de container
+    app_path = os.path.exists('/app')
+    log_detection("App directory exists at /app", app_path)
+    if app_path and os.path.exists('/app/src') and os.path.exists('/app/data'):
+        log_detection("Docker-like directory structure detected", True)
+        return True
+    
+    # Sexto teste: verificar supervisord
+    try:
+        result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
+        supervisord_running = 'supervisord' in result.stdout
+        log_detection("Supervisord running", supervisord_running)
+        if supervisord_running:
+            return True
+    except Exception as e:
+        log_detection("Error checking supervisord", str(e))
+    
+    log_detection("Final Docker detection result", False)
     return False
 
 class TaskScheduled:
