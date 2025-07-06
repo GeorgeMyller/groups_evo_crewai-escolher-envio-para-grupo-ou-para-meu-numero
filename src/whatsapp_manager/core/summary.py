@@ -127,33 +127,42 @@ if df and df.get('enabled', False):
     Message Processing and Summary Generation / Processamento de Mensagens e Geração do Resumo
     
     PT-BR:
-    - Calcula o intervalo de tempo para coleta (últimas 24 horas)
+    - Calcula o intervalo de tempo para coleta (usando datas configuradas ou últimas 24 horas)
     - Recupera e formata as mensagens do período
     - Gera o resumo usando CrewAI
     - Envia o resultado de volta ao grupo
     
     EN:
-    - Calculates time range for collection (last 24 hours)
+    - Calculates time range for collection (using configured dates or last 24 hours)
     - Retrieves and formats messages from the period
     - Generates summary using CrewAI
     - Sends result back to the group
     """
-    # Calculate time range for message collection
-    # Calcula o intervalo de tempo para coleta de mensagens
-    data_atual = datetime.now()
-    data_anterior = data_atual - timedelta(days=1)
-
+    # Tenta obter datas configuradas no CSV
     formato = "%Y-%m-%d %H:%M:%S"
-    data_atual_formatada = data_atual.strftime(formato)
-    data_anterior_formatada = data_anterior.strftime(formato)
+    start_date = df.get('start_date')
+    start_time = df.get('start_time')
+    end_date = df.get('end_date')
+    end_time = df.get('end_time')
 
-    time_info = f"Data atual: {data_atual_formatada}\nData de 1 dia anterior: {data_anterior_formatada}"
+    # Se todos os campos de data/hora estiverem presentes e válidos, usa-os
+    if start_date and start_time and end_date and end_time and str(start_date) != 'nan' and str(start_time) != 'nan' and str(end_date) != 'nan' and str(end_time) != 'nan':
+        data_anterior_formatada = f"{start_date} {start_time}"
+        data_atual_formatada = f"{end_date} {end_time}"
+        time_info = f"Data inicial configurada: {data_anterior_formatada}\nData final configurada: {data_atual_formatada}"
+    else:
+        # fallback: últimas 24h
+        data_atual = datetime.now()
+        data_anterior = data_atual - timedelta(days=1)
+        data_atual_formatada = data_atual.strftime(formato)
+        data_anterior_formatada = data_anterior.strftime(formato)
+        time_info = f"Data atual: {data_atual_formatada}\nData de 1 dia anterior: {data_anterior_formatada}"
+
     if logger:
         logger.info(time_info)
     else:
         print(time_info)
 
-    # Retrieve messages for the specified time period
     # Recupera mensagens para o período especificado
     try:
         msgs = control.get_messages(group_id, data_anterior_formatada, data_atual_formatada)
@@ -293,8 +302,9 @@ if df and df.get('enabled', False):
                 task_monitor.log_task_success(args.task_name, group_id, cont)
         
         # Log tradicional para compatibilidade
+        # Usa data_atual_formatada (data final do período de busca) para o log
         with open(log_file_path, "a", encoding="utf-8") as arquivo:
-            log = f"[{data_atual}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: {success_msg}\n"
+            log = f"[{data_atual_formatada}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: {success_msg}\n"
             arquivo.write(log)
     else:
         error_msg = "Falha ao enviar resumo para qualquer destino"

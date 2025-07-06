@@ -483,16 +483,25 @@ class GroupController:
         Returns:
             List[Message]: List of filtered messages
         """
+
+        def pad_time_string(date_str):
+            # date_str esperado: 'YYYY-MM-DD HH:MM' ou 'YYYY-MM-DD HH:MM:SS'
+            if len(date_str) == 16:  # 'YYYY-MM-DD HH:MM'
+                return date_str + ':00'
+            return date_str
+
         def to_iso8601(date_str):
-            dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+            padded = pad_time_string(date_str)
+            dt = datetime.strptime(padded, "%Y-%m-%d %H:%M:%S")
             return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
         timestamp_start = to_iso8601(start_date)
         timestamp_end = to_iso8601(end_date)
-        
+
         # Ensure instance_id and instance_token are not None
         assert self.instance_id is not None, "instance_id cannot be None"
         assert self.instance_token is not None, "instance_token cannot be None"
-        
+
         group_mensagens = self.client.chat.get_messages(
             instance_id=self.instance_id,
             remote_jid=group_id,
@@ -503,7 +512,9 @@ class GroupController:
             offset=1000
         )
         msgs = MessageSandeco.get_messages(group_mensagens)
-        data_obj = datetime.strptime(timestamp_start, "%Y-%m-%dT%H:%M:%SZ")
-        timestamp_limite = int(data_obj.timestamp())
-        msgs_filtradas = [msg for msg in msgs if msg.message_timestamp >= timestamp_limite]
+
+        # Filtrar mensagens para garantir que estejam dentro do intervalo solicitado
+        ts_start = int(datetime.strptime(timestamp_start, "%Y-%m-%dT%H:%M:%SZ").timestamp())
+        ts_end = int(datetime.strptime(timestamp_end, "%Y-%m-%dT%H:%M:%SZ").timestamp())
+        msgs_filtradas = [msg for msg in msgs if ts_start <= msg.message_timestamp <= ts_end]
         return msgs_filtradas
