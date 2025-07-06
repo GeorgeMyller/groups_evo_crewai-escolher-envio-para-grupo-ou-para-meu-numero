@@ -1,79 +1,29 @@
-# Ignore Python cache and compiled files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*$py.class
+# Git
+.git
+.gitignore
 
-# Ignore markdown, backup, and docs
-*.md
-*.md.bak
-README*
-.DS_Store
+# Docker
+Dockerfile
+docker-compose.yml
 
-
-# Ignore Docker and compose files (not needed in image)
-.dockerignore
-docker-compose*
-
-# Ignore misc
-*.bak
-
-# Ignore virtual environments
+# Python
 .venv/
-venv/
-env/
-ENV/
-
-# Ignore environment and config files
-.env
-.env.*
-.envrc
-
-# Ignore logs and runtime files
-*.log
-logs/
-summary_execution.log
-log_summary.txt
-
-# Ignore data and generated files
-data/
-groups_cache.json
-
-# Ignore Jupyter and notebook checkpoints
-.ipynb_checkpoints/
-
-# Ignore build, dist, and packaging
+*.pyc
+__pycache__/
+*.egg-info/
 build/
 dist/
-*.egg-info/
-.eggs/
-downloads/
-pip-wheel-metadata/
+*.lock
 
-# Ignore IDE/editor/project files
+# VSCode
 .vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-*.swp
-.DS_Store
 
-# Ignore documentation drafts
-docs/
-
-# Ignore node_modules if present
-node_modules/
-
-# Ignore backup files
+# Backups e arquivos temporários
+archive/
+backups/
+reorganization_backup/
 *.bak
-
-# Ignore secret scanning cache
-.cache_ggshield
-
-# Ignore optional lockfiles
-poetry.lock
-Pipfile.lock
-
-# Ignore README backups
-README.md.bak
+system.log
+*.log
+data/cache/
+*.csv

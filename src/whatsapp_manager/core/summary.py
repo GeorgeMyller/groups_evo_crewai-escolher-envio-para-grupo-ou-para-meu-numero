@@ -47,6 +47,18 @@ except ImportError:
 env_path = os.path.join(PROJECT_ROOT, '.env')
 load_dotenv(env_path, override=True) # Added override=True for consistency
 
+# Initialize logging system / Inicializa sistema de logging
+try:
+    from whatsapp_manager.utils.logger import get_logger, TaskExecutionMonitor
+    logger = get_logger("summary_task", "DEBUG")
+    task_monitor = TaskExecutionMonitor()
+    task_monitor.log_environment_info()
+except ImportError:
+    # Fallback para print se o logger não estiver disponível
+    logger = None
+    task_monitor = None
+    print("WARNING: Sistema de logging não disponível, usando print")
+
 # Get WhatsApp number from environment / Obtém número do WhatsApp do ambiente
 personal_number = os.getenv("WHATSAPP_NUMBER")
 if personal_number:
@@ -55,10 +67,11 @@ if personal_number:
     if not personal_number.endswith('@s.whatsapp'):
         personal_number = f"{personal_number}@s.whatsapp"
 
-print(f"\nConfigurações carregadas:")
-print(f"Número do WhatsApp: {personal_number}")
-print(f"Base URL: {os.getenv('EVO_BASE_URL')}")
-print(f"Instance Name: {os.getenv('EVO_INSTANCE_NAME')}")
+config_info = f"\nConfigurações carregadas:\nNúmero do WhatsApp: {personal_number}\nBase URL: {os.getenv('EVO_BASE_URL')}\nInstance Name: {os.getenv('EVO_INSTANCE_NAME')}"
+if logger:
+    logger.info(config_info)
+else:
+    print(config_info)
 
 # Initialize SendSandeco / Inicializa SendSandeco
 evo_send = SendSandeco()
@@ -72,22 +85,42 @@ args = parser.parse_args()
 # Extract group ID from task name / Extrai o ID do grupo do nome da tarefa
 group_id = args.task_name.split("_")[1]
 
+# Log task start / Log início da tarefa
+start_message = f"EXECUTANDO TAREFA AGENDADA - Task: {args.task_name}, Group ID: {group_id}"
+if logger:
+    logger.info(start_message)
+    if task_monitor:
+        task_monitor.log_task_start(args.task_name, group_id)
+else:
+    print(start_message)
+
 control = GroupController()
 df = control.load_data_by_group(group_id)
 group = control.find_group_by_id(group_id)
 if group is None:
-    print(f"Group with ID {group_id} not found.")
+    error_message = f"Group with ID {group_id} not found."
+    if logger:
+        logger.error(error_message)
+        if task_monitor:
+            task_monitor.log_task_error(args.task_name, group_id, error_message)
+    else:
+        print(error_message)
     sys.exit(1)  # Exit with error code
 nome = group.name
+
+group_info = f"Resumo do grupo : {nome}"
+if logger:
+    logger.info(group_info)
+else:
+    print(group_info)
 
 # Ensure group summary information is present in group_summary.csv
 # Garante que as informações do resumo do grupo estejam no arquivo group_summary.csv
 if not df:
+    if logger:
+        logger.warning("Dados do grupo não encontrados, criando configuração padrão")
     control.update_summary(group_id, '22:00', True, False, False, __file__)
     df = control.load_data_by_group(group_id)
-
-print("EXECUTANDO TAREFA AGENDADA")
-print(f"Resumo do grupo : {nome}")
 
 if df and df.get('enabled', False):
     """
@@ -114,26 +147,53 @@ if df and df.get('enabled', False):
     data_atual_formatada = data_atual.strftime(formato)
     data_anterior_formatada = data_anterior.strftime(formato)
 
-    print(f"Data atual: {data_atual_formatada}")
-    print(f"Data de 1 dia anterior: {data_anterior_formatada}")
+    time_info = f"Data atual: {data_atual_formatada}\nData de 1 dia anterior: {data_anterior_formatada}"
+    if logger:
+        logger.info(time_info)
+    else:
+        print(time_info)
 
     # Retrieve messages for the specified time period
     # Recupera mensagens para o período especificado
-    msgs = control.get_messages(group_id, data_anterior_formatada, data_atual_formatada)
+    try:
+        msgs = control.get_messages(group_id, data_anterior_formatada, data_atual_formatada)
+        if logger:
+            logger.info(f"Mensagens recuperadas com sucesso: {len(msgs)} mensagens")
+    except Exception as e:
+        error_msg = f"Erro ao recuperar mensagens: {str(e)}"
+        if logger:
+            logger.error(error_msg, exc_info=True)
+            if task_monitor:
+                task_monitor.log_task_error(args.task_name, group_id, error_msg)
+        else:
+            print(error_msg)
+        sys.exit(1)
 
     cont = len(msgs)
-    print(f"Total de mensagens: {cont}")
+    msg_count_info = f"Total de mensagens: {cont}"
+    if logger:
+        logger.info(msg_count_info)
+    else:
+        print(msg_count_info)
 
     # Carrega o valor de min_messages_summary do group_summary.csv
     min_messages_config = df.get('min_messages_summary', 50) # Default para 50 se não encontrado
 
     # Verifica se o total de mensagens é superior ao configurado
     if cont <= min_messages_config:
-        print(f"O número de mensagens ({cont}) é inferior ou igual ao configurado ({min_messages_config}). O resumo não será gerado.")
+        skip_reason = f"O número de mensagens ({cont}) é inferior ou igual ao configurado ({min_messages_config}). O resumo não será gerado."
+        if logger:
+            logger.info(skip_reason)
+            if task_monitor:
+                task_monitor.log_task_skipped(args.task_name, group_id, skip_reason)
+        else:
+            print(skip_reason)
         sys.exit(0) # Sai sem erro, pois não é uma falha, mas uma condição não atendida
 
     # Delay for processing
     # Aguarda processamento
+    if logger:
+        logger.info("Aguardando 20 segundos para processamento...")
     time.sleep(20)
 
     # Message data formatting for CrewAI / Formatação dos dados para o CrewAI
@@ -153,43 +213,102 @@ if df and df.get('enabled', False):
         data: {time.strftime("%d/%m %H:%M", time.localtime(msg.message_timestamp))}'     
         """
 
-    print(pull_msg)
+    if logger:
+        logger.debug(f"Mensagens formatadas para CrewAI: {pull_msg[:500]}...")  # Log apenas primeiros 500 chars
+    else:
+        print(pull_msg)
     
     # Summary generation and delivery / Geração e entrega do resumo
     inputs = {
         "msgs": pull_msg
     }
     
-    summary_crew = SummaryCrew()
-    resposta = summary_crew.kickoff(inputs=inputs)
+    try:
+        if logger:
+            logger.info("Iniciando geração de resumo com CrewAI...")
+        summary_crew = SummaryCrew()
+        resposta = summary_crew.kickoff(inputs=inputs)
+        if logger:
+            logger.info("Resumo gerado com sucesso")
+            logger.debug(f"Resumo gerado: {resposta[:200]}...")  # Log apenas primeiros 200 chars
+    except Exception as e:
+        error_msg = f"Erro ao gerar resumo com CrewAI: {str(e)}"
+        if logger:
+            logger.error(error_msg, exc_info=True)
+            if task_monitor:
+                task_monitor.log_task_error(args.task_name, group_id, error_msg)
+        else:
+            print(error_msg)
+        sys.exit(1)
 
     # Send summary based on configuration / Envia resumo com base na configuração
+    send_success = False
+    destinations = []
+    
     if df.get('send_to_group', True):
-        evo_send.textMessage(group_id, resposta)
-        print(f"Resumo enviado para o grupo: {nome}")
+        try:
+            evo_send.textMessage(group_id, resposta)
+            destinations.append("grupo")
+            send_success = True
+            if logger:
+                logger.info(f"Resumo enviado para o grupo: {nome}")
+            else:
+                print(f"Resumo enviado para o grupo: {nome}")
+        except Exception as e:
+            error_msg = f"Erro ao enviar resumo para o grupo: {str(e)}"
+            if logger:
+                logger.error(error_msg, exc_info=True)
+            else:
+                print(error_msg)
 
     # Envia para o número pessoal se estiver definido
     if personal_number:
         try:
             mensagem = f"Resumo do grupo {nome}:\n\n{resposta}"
             evo_send.textMessage(personal_number, mensagem)
-            print(f"Resumo enviado para número pessoal: {personal_number}")
+            destinations.append("número pessoal")
+            send_success = True
+            if logger:
+                logger.info(f"Resumo enviado para número pessoal: {personal_number}")
+            else:
+                print(f"Resumo enviado para número pessoal: {personal_number}")
         except Exception as e:
-            print(f"Erro ao enviar para número pessoal: {str(e)}")
+            error_msg = f"Erro ao enviar para número pessoal: {str(e)}"
+            if logger:
+                logger.error(error_msg, exc_info=True)
+            else:
+                print(error_msg)
 
     # Success logging / Registro de sucesso
     # Ensure log_summary.txt is written to the data directory at the project root
     log_file_path = os.path.join(PROJECT_ROOT, "data", "log_summary.txt")
 
-    with open(log_file_path, "a", encoding="utf-8") as arquivo:
-        destinations = []
-        if df.get('send_to_group', True):
-            destinations.append("grupo")
-        if personal_number:  # Atualizado aqui também
-            destinations.append("número pessoal")
-        
+    if send_success and destinations:
         destinations_str = " e ".join(destinations)
-        log = f"[{data_atual}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: Resumo gerado e enviado com sucesso para {destinations_str}!"
-        arquivo.write(log)
+        success_msg = f"Resumo gerado e enviado com sucesso para {destinations_str}!"
+        
+        if logger:
+            logger.info(success_msg)
+            if task_monitor:
+                task_monitor.log_task_success(args.task_name, group_id, cont)
+        
+        # Log tradicional para compatibilidade
+        with open(log_file_path, "a", encoding="utf-8") as arquivo:
+            log = f"[{data_atual}] [INFO] [GRUPO: {nome}] [GROUP_ID: {group_id}] - Mensagem: {success_msg}\n"
+            arquivo.write(log)
+    else:
+        error_msg = "Falha ao enviar resumo para qualquer destino"
+        if logger:
+            logger.error(error_msg)
+            if task_monitor:
+                task_monitor.log_task_error(args.task_name, group_id, error_msg)
+        sys.exit(1)
+        
 else:
-    print("Grupo não encontrado ou resumo não está habilitado para este grupo. / Group not found or summary is not enabled for this group.")
+    skip_msg = "Grupo não encontrado ou resumo não está habilitado para este grupo. / Group not found or summary is not enabled for this group."
+    if logger:
+        logger.warning(skip_msg)
+        if task_monitor:
+            task_monitor.log_task_skipped(args.task_name, group_id, skip_msg)
+    else:
+        print(skip_msg)

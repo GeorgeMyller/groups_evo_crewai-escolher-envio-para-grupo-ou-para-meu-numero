@@ -17,6 +17,41 @@ import subprocess
 import platform
 from datetime import datetime
 
+def is_running_in_docker():
+    """
+    PT-BR:
+    Detecta se o código está rodando dentro de um contêiner Docker.
+    
+    Returns:
+        bool: True se estiver rodando no Docker, False caso contrário
+
+    EN:
+    Detects if the code is running inside a Docker container.
+    
+    Returns:
+        bool: True if running in Docker, False otherwise
+    """
+    # Verifica se existem arquivos típicos do Docker
+    docker_indicators = [
+        '/.dockerenv',
+        '/proc/1/cgroup'
+    ]
+    
+    for indicator in docker_indicators:
+        if os.path.exists(indicator):
+            if indicator == '/proc/1/cgroup':
+                try:
+                    with open(indicator, 'r') as f:
+                        content = f.read()
+                        if 'docker' in content or 'containerd' in content:
+                            return True
+                except:
+                    pass
+            else:
+                return True
+    
+    return False
+
 class TaskScheduled:
     @staticmethod
     def validate_python_script(python_script_path):
@@ -103,6 +138,12 @@ class TaskScheduled:
             NotImplementedError: If OS is not supported
             Exception: For other scheduling errors
         """
+        # Se estamos rodando no Docker, usa o agendador simplificado
+        if is_running_in_docker():
+            from .task_scheduler_docker import TaskScheduled as DockerTaskScheduled
+            return DockerTaskScheduled.create_task(task_name, python_script_path, schedule_type, date, time)
+        
+        # Código original para sistemas operacionais nativos
         TaskScheduled.validate_python_script(python_script_path)
 
         python_executable = TaskScheduled.get_python_executable()
@@ -282,6 +323,12 @@ class TaskScheduled:
             NotImplementedError: If OS is not supported
             Exception: For removal errors
         """
+        # Se estamos rodando no Docker, usa o agendador simplificado
+        if is_running_in_docker():
+            from .task_scheduler_docker import TaskScheduled as DockerTaskScheduled
+            return DockerTaskScheduled.delete_task(task_name)
+        
+        # Código original para sistemas operacionais nativos
         os_name = platform.system()
         if os_name == "Windows":
             command = [
@@ -363,6 +410,12 @@ class TaskScheduled:
             NotImplementedError: If OS is not supported
             Exception: For listing errors
         """
+        # Se estamos rodando no Docker, usa o agendador simplificado
+        if is_running_in_docker():
+            from .task_scheduler_docker import TaskScheduled as DockerTaskScheduled
+            return DockerTaskScheduled.list_tasks()
+        
+        # Código original para sistemas operacionais nativos
         os_name = platform.system()
 
         if os_name == "Windows":
@@ -490,6 +543,12 @@ class TaskScheduled:
         Returns:
             list: List of project tasks with details
         """
+        # Se estamos rodando no Docker, usa o agendador simplificado
+        if is_running_in_docker():
+            from .task_scheduler_docker import TaskScheduled as DockerTaskScheduled
+            return DockerTaskScheduled.list_project_tasks()
+        
+        # Código original para sistemas operacionais nativos
         os_name = platform.system()
         project_tasks = []
         
@@ -605,6 +664,12 @@ class TaskScheduled:
         EN:
         Prints a formatted summary of project tasks.
         """
+        # Se estamos rodando no Docker, usa o agendador simplificado
+        if is_running_in_docker():
+            from .task_scheduler_docker import TaskScheduled as DockerTaskScheduled
+            return DockerTaskScheduled.print_project_tasks_summary()
+        
+        # Código original para sistemas operacionais nativos
         tasks = TaskScheduled.list_project_tasks()
         
         if not tasks:

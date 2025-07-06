@@ -8,9 +8,10 @@ import json
 from io import BytesIO
 import base64
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 # Load environment variables
-PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 env_path = os.path.join(PROJECT_ROOT, '.env')
 load_dotenv(env_path, override=True)
 
@@ -144,7 +145,18 @@ def main():
     print("4. Escaneie o QR code mostrado acima")
     print("5. Aguarde a conexão ser estabelecida")
     
-    print(f"\n🌐 Manager URL: http://192.168.1.151:8081/manager")
+    # Constrói a URL do manager dinamicamente a partir da EVO_BASE_URL
+    base_url = os.getenv("EVO_BASE_URL")
+    manager_url = "Não foi possível determinar a URL do manager."
+    if base_url:
+        try:
+            parsed_url = urlparse(base_url)
+            # Assume que o manager está no mesmo host, na porta 8081
+            manager_url = f"{parsed_url.scheme}://{parsed_url.hostname}:8081/manager"
+        except Exception as e:
+            manager_url = f"Erro ao construir a URL do manager: {e}"
+
+    print(f"\n🌐 Manager URL: {manager_url}")
     print("   (Acesse esta URL no navegador para ver o QR code visualmente)")
     
     print("\n🔄 Após conectar, execute novamente o sistema!")

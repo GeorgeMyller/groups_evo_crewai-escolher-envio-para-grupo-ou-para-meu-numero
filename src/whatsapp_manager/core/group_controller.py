@@ -22,7 +22,7 @@ from evolutionapi.exceptions import EvolutionAuthenticationError, EvolutionAPIEr
 from .group import Group
 import pandas as pd
 from .message_sandeco import MessageSandeco
-from ..utils.task_scheduler import TaskScheduled
+from ..utils.task_scheduler import TaskScheduled, is_running_in_docker
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -56,6 +56,13 @@ class GroupController:
             raise ValueError("API_TOKEN, INSTANCE_NAME ou INSTANCE_TOKEN não configurados. / API_TOKEN, INSTANCE_NAME or INSTANCE_TOKEN not configured.")
         # Garantir non-null types para o type checker
         assert self.api_token is not None and self.instance_id is not None and self.instance_token is not None
+
+        if is_running_in_docker():
+            # Docker container -> host machine
+            self.base_url = os.getenv("EVO_BASE_URL", 'http://host.docker.internal:8081')
+        else:
+            # Local machine
+            self.base_url = os.getenv("EVO_BASE_URL", 'http://localhost:8081')
 
         print(f"Inicializando EvolutionClient com URL / Initializing EvolutionClient with URL: {self.base_url}")
         self.client = EvolutionClient(base_url=self.base_url, api_token=self.api_token)
