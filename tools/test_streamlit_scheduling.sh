@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # test_streamlit_scheduling.sh
 # Script para testar agendamento via Streamlit e monitorar logs
 

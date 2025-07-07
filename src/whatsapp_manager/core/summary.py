@@ -199,11 +199,13 @@ if df and df.get('enabled', False):
             print(skip_reason)
         sys.exit(0) # Sai sem erro, pois não é uma falha, mas uma condição não atendida
 
-    # Delay for processing
-    # Aguarda processamento
-    if logger:
-        logger.info("Aguardando 20 segundos para processamento...")
-    time.sleep(20)
+    # Delay for processing (configurable via environment variable)
+    # Aguarda processamento (configurável via variável de ambiente)
+    delay_seconds = int(os.getenv("SUMMARY_PROCESSING_DELAY", "20"))
+    if delay_seconds > 0:
+        if logger:
+            logger.info(f"Aguardando {delay_seconds} segundos para processamento...")
+        time.sleep(delay_seconds)
 
     # Message data formatting for CrewAI / Formatação dos dados para o CrewAI
     pull_msg = f"""

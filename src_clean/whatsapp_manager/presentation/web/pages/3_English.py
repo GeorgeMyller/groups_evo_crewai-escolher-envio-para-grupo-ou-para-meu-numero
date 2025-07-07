@@ -141,7 +141,6 @@ with col1:
     # --- Scheduled Groups Management ---
     st.subheader("Scheduled Tasks")
     scheduled_groups_dict = group_service.group_repository.load_all_summary_data()
-    import pandas as pd
     if scheduled_groups_dict:
         scheduled_groups = pd.DataFrame(list(scheduled_groups_dict.values()))
         group_dict = {group.group_id: group.name for group in groups}
