@@ -5,6 +5,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
 # ====================
 # C extensions
 # ====================
@@ -31,7 +32,7 @@ venv/
 env/
 ENV/
 .env
-.env.*
+.env/
 .envrc
 
 # ====================
