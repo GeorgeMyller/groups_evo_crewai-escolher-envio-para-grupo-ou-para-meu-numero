@@ -28,11 +28,11 @@ log "Checking crontab setup"
 crontab -l > /tmp/current_crontab || echo "" > /tmp/current_crontab
 cat /tmp/current_crontab
 
-# Stop cron if it's already running
-log "Stopping cron if running"
-service cron stop || true
-
 # Make sure cron is configured correctly
+
+# Garante que o diretório de cron existe
+mkdir -p /etc/cron.d
+
 log "Configuring cron"
 echo "SHELL=/bin/bash" > /etc/cron.d/app-cron
 echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> /etc/cron.d/app-cron
@@ -49,29 +49,24 @@ chown root:root /etc/cron.d/app-cron
 echo "* * * * * root echo \"Cron is working\" >> /app/data/cron_test.log 2>&1" > /etc/cron.d/cron-test
 chmod 0644 /etc/cron.d/cron-test
 
-# Start cron with full logging
-log "Starting cron"
-service cron start
-sleep 2
-
-# Verify cron status
-log "Checking cron status"
-service cron status || { log "ERROR: Failed to start cron service"; }
-
-# Exibir status dos serviços
-log "=== STATUS DOS SERVIÇOS ==="
-log "Cron:"
-service cron status || log "ERROR: Cron not running"
-
-log "=== VERIFICAÇÃO DE ARQUIVOS ==="
-log "Diretório /app/data:"
-ls -la /app/data
-log "Arquivo group_summary.csv:"
-ls -la /app/data/group_summary.csv
-
 # Create docker marker file to help detection
 touch /app/.docker_environment
 log "Docker environment marker file created"
+
+# Stop any existing cron processes to avoid conflicts
+log "Stopping any existing cron processes"
+pkill -f cron || true
+pkill -f crond || true
+sleep 2
+
+# Remove any existing cron PID files
+log "Cleaning up cron PID files"
+rm -f /var/run/crond.pid
+rm -f /run/crond.pid
+rm -f /var/run/cron.pid
+
+# Make sure /var/run directory has proper permissions
+chmod 755 /var/run
 
 log "Entrypoint script complete, executing main command: $@"
 

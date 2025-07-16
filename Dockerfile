@@ -1,6 +1,6 @@
-FROM python:3.12.10-slim AS builder
+FROM python:3.12-slim AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -o Acquire::Check-Valid-Until=false && apt-get install -y --no-install-recommends --allow-unauthenticated \
     cron \
     curl \
     supervisor \
@@ -12,11 +12,12 @@ COPY . .
 
 RUN curl -Ls https://astral.sh/uv/install.sh | sh && \
     export PATH="/root/.local/bin:$PATH" && \
+    export UV_HTTP_TIMEOUT=120 && \
     uv pip install --system .
 
-FROM python:3.12.10-slim
+FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -o Acquire::Check-Valid-Until=false && apt-get install -y --no-install-recommends --allow-unauthenticated \
     cron \
     supervisor \
     procps \
@@ -33,6 +34,8 @@ COPY --from=builder /app /app
 # Create necessary directories for logs and data with proper permissions
 RUN mkdir -p /app/data/logs && \
     mkdir -p /app/data/cache && \
+    mkdir -p /var/run && \
+    chmod 755 /var/run && \
     chmod 777 /app/data && \
     chmod 777 /app/data/logs && \
     chmod 777 /app/data/cache && \

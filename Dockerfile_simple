@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir -e .
+
+# Create necessary directories for logs and data with proper permissions
+RUN mkdir -p /app/data/logs && \
+    mkdir -p /app/data/cache && \
+    chmod 777 /app/data && \
+    chmod 777 /app/data/logs && \
+    chmod 777 /app/data/cache && \
+    touch /app/data/group_summary.csv && \
+    chmod 666 /app/data/group_summary.csv
+
+# Copy supervisord.conf to the correct location
+COPY supervisord_simple.conf /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8501
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
